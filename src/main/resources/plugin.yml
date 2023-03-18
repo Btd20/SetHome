@@ -1,0 +1,5 @@
+name: SetHome
+version: '${project.version}'
+author: Beeted_
+main: beeted.sethome.SetHome
+api-version: 1.13
