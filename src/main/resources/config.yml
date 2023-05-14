@@ -1,0 +1,20 @@
+##########################
+#         SetHome        #
+##########################
+# Author: Beeted_
+# Version: 1.0
+
+# Menu config.
+menu:
+  open-command: /home
+
+  gui-title: "&9&lHome Menu &8⌂"
+
+  info-title: "&8❮❮❮ &7Set Home &8| &7Go Home &8❯❯❯"
+
+  set-home-item: "&7➤ &3Set Home"
+  travel-home-item: "&7➤ &bTravel Home"
+
+messages:
+  home-established: "&aYour home has been established!"
+  not-established-home: "&cYou don't have an established home."

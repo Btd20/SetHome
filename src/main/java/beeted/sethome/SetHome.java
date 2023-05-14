@@ -1,26 +1,38 @@
 package beeted.sethome;
 
-import beeted.sethome.coordinates.SaveCoordinates;
 import org.bukkit.Bukkit;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
 
 public final class SetHome extends JavaPlugin {
     ConsoleCommandSender console = Bukkit.getConsoleSender();
     @Override
     public void onEnable() {
         // Plugin startup logic
-        registerEvents();
+        PluginManager pm = getServer().getPluginManager();
+        pm.registerEvents(new Menu(this), this);
+        getConfig().options().copyDefaults();
+        saveDefaultConfig();
     }
 
     @Override
     public void onDisable() {
         // Plugin shutdown logic
+        console.sendMessage("[SetHome] Saving your home...");
+        console.sendMessage("[SetHome] Saving config.");
     }
 
-    public void registerEvents() {
-        PluginManager pm = getServer().getPluginManager();
-        pm.registerEvents(new SaveCoordinates(this), this);
+    public void registerConfig(){
+        File config = new File(this.getDataFolder(), "config.yml");
+        String configRute = config.getPath();
+        if(!config.exists()){
+            this.getConfig().options().copyDefaults(true);
+            saveDefaultConfig();
+        }
     }
 }
