@@ -4,7 +4,10 @@
 # Author: Beeted_
 # Version: 1.0
 
-# Menu config.
+# For support: https://discord.gg/ncTMjcNWPx
+# If you liked the plugin, I would greatly appreciate a review on the Spigot page :)
+
+# Customize the menu.
 menu:
   open-command: /home
 
@@ -15,6 +18,8 @@ menu:
   set-home-item: "&7➤ &3Set Home"
   travel-home-item: "&7➤ &bTravel Home"
 
+# Customize the messages.
 messages:
   home-established: "&aYour home has been established!"
   not-established-home: "&cYou don't have an established home."
+  teleported: "&aYou have traveled home!"

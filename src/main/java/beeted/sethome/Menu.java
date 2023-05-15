@@ -173,6 +173,12 @@ public class Menu implements Listener {
                     Location homeLocation = new Location(player.getWorld(), x, y, z);
                     player.teleport(homeLocation);
 
+                    // Lectura de la config
+                    String path6 = "messages.teleported";
+
+                    // Manda el mensaje conforme se ha teletransportado
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString(path6)));
+
                     // Cancela la ejecución del comando para evitar que el servidor lo procese
                     event.setCancelled(true);
                 } else {
