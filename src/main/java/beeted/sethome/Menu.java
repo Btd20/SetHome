@@ -111,6 +111,10 @@ public class Menu implements Listener {
             // Obtiene el item que ha sido clicado
             ItemStack clickedItem = event.getCurrentItem();
 
+            if (clickedItem == null) {
+                return; // Sale del método si el item clicado es nulo
+            }
+
             //Lectura de la config
             String path2 = "menu.set-home-item";
 
