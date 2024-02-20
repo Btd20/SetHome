@@ -2,7 +2,7 @@
 #         SetHome        #
 ##########################
 # Author: Beeted_
-# Version: 1.0
+# Version: 1.1
 
 # For support: https://discord.gg/ncTMjcNWPx
 # If you liked the plugin, I would greatly appreciate a review on the Spigot page :)
@@ -10,16 +10,23 @@
 # Customize the menu.
 menu:
   open-command: /home
-
   gui-title: "&9&lHome Menu &8⌂"
-
   info-title: "&8❮❮❮ &7Set Home &8| &7Go Home &8❯❯❯"
-
   set-home-item: "&7➤ &3Set Home"
-  travel-home-item: "&7➤ &bTravel Home"
+  your-homes-item: "&7➤ &eYour homes"
+
+homes-menu:
+  gui-title: "&9&lYour Homes Menu &8⌂"
+  go-back-item: "&cGo Back"
+  close-item: "&4Close"
+  home-name: "&7Home: &b%home%"
 
 # Customize the messages.
 messages:
   home-established: "&aYour home has been established!"
   not-established-home: "&cYou don't have an established home."
-  teleported: "&aYou have traveled home!"
+  teleported: "&aYou have traveled home: &7%home%"
+  home-not-found: "&4Error: Home coordinates not found."
+  home-exists: "&4A home with that name already exists. Please choose a different name."
+  enter-home-name: "&eEnter the name for your home in the chat."
+  no-permissions: "&4You don't have permissions."
