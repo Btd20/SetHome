@@ -19,7 +19,13 @@ homes-menu:
   gui-title: "&9&lYour Homes Menu &8⌂"
   go-back-item: "&cGo Back"
   close-item: "&4Close"
-  home-name: "&7Home: &b%home%"
+
+home-item:
+  display-name: "&7Home: &b%home%"
+  lore:
+    - ""
+    - "&c(Right-Click to delete)"
+    - "&a(Left-Click to teleport)"
 
 # Customize the messages.
 messages:
@@ -27,6 +33,7 @@ messages:
   not-established-home: "&cYou don't have an established home."
   teleported: "&aYou have traveled home: &7%home%"
   home-not-found: "&4Error: Home coordinates not found."
+  home-removed: "&cYour home &b%home% &chas been removed."
   home-exists: "&4A home with that name already exists. Please choose a different name."
   enter-home-name: "&eEnter the name for your home in the chat."
   no-permissions: "&4You don't have permissions."

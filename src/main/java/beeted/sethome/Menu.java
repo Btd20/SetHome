@@ -19,6 +19,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -172,7 +173,7 @@ public class Menu implements Listener {
                 return;
             }
 
-            if (clickedItem != null && clickedItem.getType() == Material.RED_BED) {
+            if (event.getClick() == ClickType.LEFT && clickedItem != null && clickedItem.getType() == Material.RED_BED) {
                 String homeName = ChatColor.stripColor(clickedItem.getItemMeta().getDisplayName().replace("Home: ", ""));
 
                 // Teletransporta al jugador a su hogar
@@ -230,7 +231,7 @@ public class Menu implements Listener {
                 }
 
                 // Recarga el inventario después de eliminar el hogar
-                Bukkit.getScheduler().runTaskLater(plugin, () -> openYourHomesInventory(player, config.getString("homes-menu.gui-title")), 1);
+                player.closeInventory();
             }
         }
     }
@@ -298,10 +299,20 @@ public class Menu implements Listener {
             // Crea un nuevo ítem de cama
             ItemStack bedItem = new ItemStack(Material.RED_BED);
             ItemMeta bedMeta = bedItem.getItemMeta();
-            String homeNamePath = config.getString("homes-menu.home-name");
+
+            // Configura el nombre del hogar con colores
+            String homeNamePath = config.getString("home-item.display-name");
             String homeNameItem = ChatColor.translateAlternateColorCodes('&', homeNamePath);
             homeNameItem = homeNameItem.replace("%home%", home);
-            bedMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', homeNameItem));
+            bedMeta.setDisplayName(homeNameItem);
+
+            // Configura el lore del hogar con colores
+            List<String> lore = config.getStringList("home-item.lore");
+            for (int i = 0; i < lore.size(); i++) {
+                lore.set(i, ChatColor.translateAlternateColorCodes('&', lore.get(i).replace("%home%", home)));
+            }
+            bedMeta.setLore(lore);
+
             bedItem.setItemMeta(bedMeta);
 
             // Agrega la cama al inventario
