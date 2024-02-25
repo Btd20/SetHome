@@ -50,3 +50,4 @@ messages:
   enter-home-name: "&eEnter the name for your home in the chat. Type &7cancel &eif you want to cancel."
   home-cancelled: "&cYou have canceled the creation of the home."
   no-permissions: "&4You don't have permissions."
+  plugin-reloaded: "&aPlugin reloaded successfully!"

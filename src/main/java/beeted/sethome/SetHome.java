@@ -17,6 +17,7 @@ public final class SetHome extends JavaPlugin {
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new Menu(this), this);
         getConfig().options().copyDefaults();
+        getCommand("home").setExecutor(new HomeCommandExecutor(this));
         saveDefaultConfig();
     }
 
