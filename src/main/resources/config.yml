@@ -12,20 +12,32 @@ menu:
   open-command: /home
   gui-title: "&9&lHome Menu &8⌂"
   info-title: "&8❮❮❮ &7Set Home &8| &7Go Home &8❯❯❯"
-  set-home-item: "&7➤ &3Set Home"
-  your-homes-item: "&7➤ &eYour homes"
+  set-home-item:
+    display-name: "&7➤ &3&lSet Home"
+    lore:
+      - "&7With this item you can"
+      - "&7set your home and save it"
+      - "&7with a name."
+      - ""
+      - "&a(Left-Click to set home)"
+  your-homes-item:
+    display-name: "&7➤ &e&lYour homes"
+    lore:
+      - "&7With this object you can"
+      - "&7open the menu of your homes"
+      - "&7and manage all your homes."
+      - ""
+      - "&a(Left-Click to open menu)"
 
 homes-menu:
   gui-title: "&9&lYour Homes Menu &8⌂"
   go-back-item: "&cGo Back"
   close-item: "&4Close"
-
-home-item:
-  display-name: "&7Home: &b%home%"
-  lore:
-    - ""
-    - "&c(Right-Click to delete)"
-    - "&a(Left-Click to teleport)"
+  home-item:
+    display-name: "&7&lHOME &8» &b%home%"
+    lore:
+      - "&c(Right-Click to delete)"
+      - "&a(Left-Click to teleport)"
 
 # Customize the messages.
 messages:
@@ -35,5 +47,6 @@ messages:
   home-not-found: "&4Error: Home coordinates not found."
   home-removed: "&cYour home &b%home% &chas been removed."
   home-exists: "&4A home with that name already exists. Please choose a different name."
-  enter-home-name: "&eEnter the name for your home in the chat."
+  enter-home-name: "&eEnter the name for your home in the chat. Type &7cancel &eif you want to cancel."
+  home-cancelled: "&cYou have canceled the creation of the home."
   no-permissions: "&4You don't have permissions."

@@ -1,8 +1,5 @@
 package beeted.sethome;
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
+import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,6 +12,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,10 +54,19 @@ public class Menu implements Listener {
                 ItemStack setHomeItem = new ItemStack(Material.RED_BED);
                 ItemMeta setHomeMeta = setHomeItem.getItemMeta();
 
-                //Lectura de la config
-                String path3 = "menu.set-home-item";
+                String setHomeItemPath = "menu.set-home-item";
+                String setHomeDisplayName = config.getString(setHomeItemPath + ".display-name");
+                List<String> setHomeLore = config.getStringList(setHomeItemPath + ".lore");
 
-                setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString(path3)));
+                // Configura el nombre del ítem con colores
+                setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', setHomeDisplayName));
+
+                // Configura el lore del ítem con colores
+                for (int i = 0; i < setHomeLore.size(); i++) {
+                    setHomeLore.set(i, ChatColor.translateAlternateColorCodes('&', setHomeLore.get(i)));
+                }
+                setHomeMeta.setLore(setHomeLore);
+
                 setHomeItem.setItemMeta(setHomeMeta);
 
                 /////
@@ -86,12 +93,22 @@ public class Menu implements Listener {
                 // Cancela la ejecución del comando para evitar que el servidor lo procese
                 event.setCancelled(true);
 
-                String path6 = "menu.your-homes-item";
-
-                // Crea un nuevo objeto para el inventario
                 ItemStack homeListItem = new ItemStack(Material.OAK_DOOR);
                 ItemMeta doorItemMeta = homeListItem.getItemMeta();
-                doorItemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString(path6)));
+
+                String path6 = "menu.your-homes-item";
+                String homeListDisplayName = config.getString(path6 + ".display-name");
+                List<String> homeListLore = config.getStringList(path6 + ".lore");
+
+                // Configura el nombre del ítem con colores
+                doorItemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', homeListDisplayName));
+
+                // Configura el lore del ítem con colores
+                for (int i = 0; i < homeListLore.size(); i++) {
+                    homeListLore.set(i, ChatColor.translateAlternateColorCodes('&', homeListLore.get(i)));
+                }
+                doorItemMeta.setLore(homeListLore);
+
                 homeListItem.setItemMeta(doorItemMeta);
 
                 // Agrega el objeto al inventario
@@ -120,7 +137,7 @@ public class Menu implements Listener {
             ItemStack clickedItem = event.getCurrentItem();
 
             //Lectura de la config
-            String path2 = "menu.set-home-item";
+            String path2 = "menu.set-home-item.display-name";
 
             // Verifica si el item es el de establecer hogar
             if (clickedItem.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', config.getString(path2)))) {
@@ -135,7 +152,7 @@ public class Menu implements Listener {
                 player.closeInventory();
             }
 
-            String path6 = "menu.your-homes-item";
+            String path6 = "menu.your-homes-item.display-name";
             String homesTitle = "homes-menu.gui-title";
 
             // Verifica si el item es el de la puerta
@@ -144,7 +161,7 @@ public class Menu implements Listener {
                 player.closeInventory();
 
                 // Abre el inventario "Your homes" después de un breve retraso para asegurarse de que el inventario actual se haya cerrado completamente
-                Bukkit.getScheduler().runTaskLater(plugin, () -> openYourHomesInventory(player, config.getString(homesTitle)), 1);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> openYourHomesInventory(player, config.getString(homesTitle)), 0);
             }
         }
 
@@ -174,7 +191,7 @@ public class Menu implements Listener {
             }
 
             if (event.getClick() == ClickType.LEFT && clickedItem != null && clickedItem.getType() == Material.RED_BED) {
-                String homeName = ChatColor.stripColor(clickedItem.getItemMeta().getDisplayName().replace("Home: ", ""));
+                String homeName = clickedItem.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING);
 
                 // Teletransporta al jugador a su hogar
                 File dataFolder = new File(plugin.getDataFolder(), "data");
@@ -205,7 +222,7 @@ public class Menu implements Listener {
                 }
             }
             if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
-                String homeName = ChatColor.stripColor(clickedItem.getItemMeta().getDisplayName().replace("Home: ", ""));
+                String homeName = clickedItem.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING);
 
                 // Elimina el hogar del jugador
                 File dataFolder = new File(plugin.getDataFolder(), "data");
@@ -248,8 +265,18 @@ public class Menu implements Listener {
         ItemMeta setHomeMeta = setHomeItem.getItemMeta();
 
         String setHomeItemPath = "menu.set-home-item";
+        String setHomeDisplayName = config.getString(setHomeItemPath + ".display-name");
+        List<String> setHomeLore = config.getStringList(setHomeItemPath + ".lore");
 
-        setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString(setHomeItemPath)));
+        // Configura el nombre del ítem con colores
+        setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', setHomeDisplayName));
+
+        // Configura el lore del ítem con colores
+        for (int i = 0; i < setHomeLore.size(); i++) {
+            setHomeLore.set(i, ChatColor.translateAlternateColorCodes('&', setHomeLore.get(i)));
+        }
+        setHomeMeta.setLore(setHomeLore);
+
         setHomeItem.setItemMeta(setHomeMeta);
 
         ItemStack miObjeto = new ItemStack(Material.NETHER_STAR);
@@ -260,16 +287,27 @@ public class Menu implements Listener {
         miObjetoMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString(infoTitlePath)));
         miObjeto.setItemMeta(miObjetoMeta);
 
-        ItemStack portalItem = new ItemStack(Material.OAK_DOOR);
-        ItemMeta portalMeta = portalItem.getItemMeta();
+        ItemStack homeListItem = new ItemStack(Material.OAK_DOOR);
+        ItemMeta doorItemMeta = homeListItem.getItemMeta();
 
-        String portalItemPath = "menu.your-homes-item";
-        portalMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString(portalItemPath)));
-        portalItem.setItemMeta(portalMeta);
+        String path6 = "menu.your-homes-item";
+        String homeListDisplayName = config.getString(path6 + ".display-name");
+        List<String> homeListLore = config.getStringList(path6 + ".lore");
+
+        // Configura el nombre del ítem con colores
+        doorItemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', homeListDisplayName));
+
+        // Configura el lore del ítem con colores
+        for (int i = 0; i < homeListLore.size(); i++) {
+            homeListLore.set(i, ChatColor.translateAlternateColorCodes('&', homeListLore.get(i)));
+        }
+        doorItemMeta.setLore(homeListLore);
+
+        homeListItem.setItemMeta(doorItemMeta);
 
         menu.setItem(13, miObjeto);
         menu.setItem(11, setHomeItem);
-        menu.setItem(15, portalItem); // Ajusta la posición según tus necesidades
+        menu.setItem(15, homeListItem);
 
         player.openInventory(menu);
     }
@@ -288,6 +326,8 @@ public class Menu implements Listener {
         // Obtén la lista de hogares del jugador
         List<String> homes = playerConfig.getStringList("homes");
 
+        int position = 0;
+
         // Itera sobre cada hogar y agrega una cama al inventario por cada uno
         for (String home : homes) {
             // Puedes ajustar esto según tu lógica para obtener las coordenadas del hogar
@@ -301,19 +341,24 @@ public class Menu implements Listener {
             ItemMeta bedMeta = bedItem.getItemMeta();
 
             // Configura el nombre del hogar con colores
-            String homeNamePath = config.getString("home-item.display-name");
+            String homeNamePath = config.getString("homes-menu.home-item.display-name");
             String homeNameItem = ChatColor.translateAlternateColorCodes('&', homeNamePath);
             homeNameItem = homeNameItem.replace("%home%", home);
             bedMeta.setDisplayName(homeNameItem);
 
+            // Asigna un identificador único al ítem (puede ser la posición del hogar en la lista)
+            bedMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING, home);
+
             // Configura el lore del hogar con colores
-            List<String> lore = config.getStringList("home-item.lore");
+            List<String> lore = config.getStringList("homes-menu.home-item.lore");
             for (int i = 0; i < lore.size(); i++) {
                 lore.set(i, ChatColor.translateAlternateColorCodes('&', lore.get(i).replace("%home%", home)));
             }
             bedMeta.setLore(lore);
 
             bedItem.setItemMeta(bedMeta);
+
+            position++;
 
             // Agrega la cama al inventario
             homesMenu.addItem(bedItem);
@@ -351,8 +396,20 @@ public class Menu implements Listener {
 
         // Verifica si el jugador está esperando para establecer el nombre de la casa
         if (pendingHomeNames.containsKey(player)) {
+            // Obtiene el mensaje de chat del jugador
+            String message = event.getMessage();
+
+            // Verifica si el jugador ha escrito "cancel"
+            if (message.equalsIgnoreCase("cancel")) {
+                // Cancela la entrada del nombre del hogar y notifica al jugador
+                pendingHomeNames.remove(player);
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-cancelled")));
+                event.setCancelled(true);
+                return;
+            }
+
             // Obtiene el nombre de la casa del mensaje de chat
-            String homeName = event.getMessage();
+            String homeName = message;
 
             // Verifica si el hogar ya existe
             File dataFolder = new File(plugin.getDataFolder(), "data");
