@@ -9,26 +9,37 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Menu implements Listener {
 
     private final SetHome plugin;
     private final Map<Player, String> pendingHomeNames = new HashMap<>();
+    private final Map<Player, BukkitRunnable> teleportCooldowns = new HashMap<>();
+    private long cooldownTime; // Tiempo de cooldown en milisegundos
+    private final Map<Player, BukkitRunnable> teleportTasks = new HashMap<>();
+    private final Set<Player> teleportingPlayers = new HashSet<>();
 
-    public Menu (SetHome plugin) {
+
+
+    public Menu(SetHome plugin) {
         this.plugin = plugin;
+        reloadConfig();
+    }
+
+    private void reloadConfig() {
+        FileConfiguration config = plugin.getConfig();
+        cooldownTime = config.getLong("teleport-cooldown") * 1000L; // Convertir segundos a milisegundos
     }
 
     @EventHandler
@@ -122,25 +133,29 @@ public class Menu implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        // Obtiene el jugador que ha clicado en el inventario
+        // Verifica que el clic es de un jugador
+        if (!(event.getWhoClicked() instanceof Player)) {
+            return;
+        }
+
         Player player = (Player) event.getWhoClicked();
         FileConfiguration config = plugin.getConfig();
 
-        // Lectura de la config
-        String path1 = "menu.gui-title";
+        // Obtiene el inventario
+        Inventory inventory = event.getInventory();
+        String inventoryTitle = ChatColor.translateAlternateColorCodes('&', config.getString("menu.gui-title"));
 
         // Verifica si el inventario es el menú de hogar
-        if (event.getView().getTitle().equals(ChatColor.translateAlternateColorCodes('&', config.getString(path1)))) {
+        if (event.getView().getTitle().equals(inventoryTitle)) {
             event.setCancelled(true); // Cancela el evento para evitar que el jugador mueva los items
 
             // Obtiene el item que ha sido clicado
             ItemStack clickedItem = event.getCurrentItem();
 
-            //Lectura de la config
-            String path2 = "menu.set-home-item.display-name";
-
             // Verifica si el item es el de establecer hogar
-            if (clickedItem.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', config.getString(path2)))) {
+            String setHomeItemName = ChatColor.translateAlternateColorCodes('&', config.getString("menu.set-home-item.display-name"));
+            if (clickedItem != null && clickedItem.getItemMeta() != null &&
+                    clickedItem.getItemMeta().getDisplayName().equals(setHomeItemName)) {
                 // Guarda el jugador que está estableciendo el hogar
                 pendingHomeNames.put(player, "");
 
@@ -152,24 +167,21 @@ public class Menu implements Listener {
                 player.closeInventory();
             }
 
-            String path6 = "menu.your-homes-item.display-name";
-            String homesTitle = "homes-menu.gui-title";
-
             // Verifica si el item es el de la puerta
-            if (clickedItem.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', config.getString(path6)))) {
+            String yourHomesItemName = ChatColor.translateAlternateColorCodes('&', config.getString("menu.your-homes-item.display-name"));
+            if (clickedItem != null && clickedItem.getItemMeta() != null &&
+                    clickedItem.getItemMeta().getDisplayName().equals(yourHomesItemName)) {
                 // Cierra el inventario actual
                 player.closeInventory();
 
                 // Abre el inventario "Your homes" después de un breve retraso para asegurarse de que el inventario actual se haya cerrado completamente
-                Bukkit.getScheduler().runTaskLater(plugin, () -> openYourHomesInventory(player, config.getString(homesTitle)), 0);
+                Bukkit.getScheduler().runTaskLater(plugin, () -> openYourHomesInventory(player, config.getString("homes-menu.gui-title")), 1); // Ajusta el retraso si es necesario
             }
         }
 
-        String path6 = "homes-menu.gui-title";
-
         // Verifica si el inventario clicado es el inventario "Your homes"
-        if (event.getView().getTitle().equals(ChatColor.translateAlternateColorCodes('&', config.getString(path6)))) {
-            event.setCancelled(true); // Cancela el evento para evitar que el jugador tome la cama
+        if (event.getView().getTitle().equals(ChatColor.translateAlternateColorCodes('&', config.getString("homes-menu.gui-title")))) {
+            event.setCancelled(true); // Cancela el evento para evitar que el jugador tome los items
 
             // Obtiene el item que ha sido clicado
             ItemStack clickedItem = event.getCurrentItem();
@@ -190,68 +202,136 @@ public class Menu implements Listener {
                 return;
             }
 
-            if (event.getClick() == ClickType.LEFT && clickedItem != null && clickedItem.getType() == Material.RED_BED) {
+            if (clickedItem != null && clickedItem.getItemMeta() != null) {
                 String homeName = clickedItem.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING);
 
-                // Teletransporta al jugador a su hogar
-                File dataFolder = new File(plugin.getDataFolder(), "data");
-                File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
-                YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
-                String homeCoords = playerConfig.getString(homeName);
+                // Verifica si el clic es del tipo izquierdo y el item es una cama roja
+                if (event.getClick() == ClickType.LEFT && clickedItem.getType() == Material.RED_BED) {
+                    if (homeName != null) {
+                        // Verifica si el jugador ya tiene un cooldown de teletransporte
+                        if (teleportCooldowns.containsKey(player)) {
+                            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.teleport-in-progress")));
+                            return;
+                        }
 
-                if (homeCoords != null) {
-                    String[] coords = homeCoords.split(" ");
-                    int x = Integer.parseInt(coords[1]);
-                    int y = Integer.parseInt(coords[3]);
-                    int z = Integer.parseInt(coords[5]);
+                        // Inicia el cooldown de teletransporte
+                        String teleportCooldownMessage = ChatColor.translateAlternateColorCodes('&', config.getString("messages.teleport-cooldown"));
+                        String formattedMessage = teleportCooldownMessage.replace("%seconds%", String.valueOf(cooldownTime / 1000));
+                        player.sendMessage(formattedMessage);
 
-                    Location homeLocation = new Location(player.getWorld(), x, y, z);
-                    player.teleport(homeLocation);
+                        // Marca al jugador como teletransportándose
+                        teleportingPlayers.add(player);
 
-                    // Mensaje de confirmación
-                    String teleportedToHomePath = config.getString("messages.teleported");
-                    String teleportMessage = ChatColor.translateAlternateColorCodes('&', teleportedToHomePath);
-                    teleportMessage = teleportMessage.replace("%home%", homeName);
-                    player.sendMessage(teleportMessage);
+                        // Tarea para teletransportar al jugador después del cooldown
+                        BukkitRunnable teleportTask = new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                // Verifica si el jugador aún está en el proceso de teletransporte
+                                if (teleportingPlayers.contains(player)) {
+                                    // Realiza el teletransporte
+                                    File dataFolder = new File(plugin.getDataFolder(), "data");
+                                    File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
+                                    YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+                                    String homeCoords = playerConfig.getString(homeName);
 
-                } else {
-                    // Mensaje de error si no se encuentra la coordenada del hogar
-                    String homeNotFound = config.getString("messages.home-not-found");
-                    String notFoundMessage = ChatColor.translateAlternateColorCodes('&', homeNotFound);
-                    player.sendMessage(notFoundMessage);
+                                    if (homeCoords != null) {
+                                        String[] coords = homeCoords.split(" ");
+                                        int x = Integer.parseInt(coords[1]);
+                                        int y = Integer.parseInt(coords[3]);
+                                        int z = Integer.parseInt(coords[5]);
+
+                                        Location homeLocation = new Location(player.getWorld(), x, y, z);
+                                        player.teleport(homeLocation);
+
+                                        // Mensaje de confirmación
+                                        String teleportedToHomePath = config.getString("messages.teleported");
+                                        String teleportMessage = ChatColor.translateAlternateColorCodes('&', teleportedToHomePath);
+                                        teleportMessage = teleportMessage.replace("%home%", homeName);
+                                        player.sendMessage(teleportMessage);
+
+                                    } else {
+                                        // Mensaje de error si no se encuentra la coordenada del hogar
+                                        String homeNotFound = config.getString("messages.home-not-found");
+                                        String notFoundMessage = ChatColor.translateAlternateColorCodes('&', homeNotFound);
+                                        player.sendMessage(notFoundMessage);
+                                    }
+
+                                    // Limpia el cooldown
+                                    teleportCooldowns.remove(player);
+                                    teleportingPlayers.remove(player);
+                                }
+                            }
+                        };
+
+                        // Programa la tarea con el cooldown
+                        teleportTask.runTaskLater(plugin, cooldownTime / 50); // Dividido por 50 porque runTaskLater usa ticks (1 tick = 50ms)
+
+                        // Almacena la tarea programada para poder cancelarla si es necesario
+                        teleportTasks.put(player, teleportTask);
+
+                        // Cierra el inventario para que el jugador no haga clic en otros items durante el cooldown
+                        player.closeInventory();
+                    }
                 }
-            }
-            if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
-                String homeName = clickedItem.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING);
 
-                // Elimina el hogar del jugador
-                File dataFolder = new File(plugin.getDataFolder(), "data");
-                File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
-                YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+                // Verifica si el clic es del tipo derecho y el item es una cama roja
+                if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
+                    if (homeName != null) {
+                        // Elimina el hogar del jugador
+                        File dataFolder = new File(plugin.getDataFolder(), "data");
+                        File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
+                        YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
 
-                List<String> homes = playerConfig.getStringList("homes");
-                homes.remove(homeName);
-                playerConfig.set("homes", homes);
-                playerConfig.set(homeName, null); // Elimina las coordenadas del hogar
+                        List<String> homes = playerConfig.getStringList("homes");
+                        homes.remove(homeName);
+                        playerConfig.set("homes", homes);
+                        playerConfig.set(homeName, null); // Elimina las coordenadas del hogar
 
-                try {
-                    playerConfig.save(playerFile);
+                        try {
+                            playerConfig.save(playerFile);
 
-                    // Mensaje de confirmación
-                    String homeRemoved = config.getString("messages.home-removed");
-                    String removedMessage = ChatColor.translateAlternateColorCodes('&', homeRemoved);
-                    removedMessage = removedMessage.replace("%home%", homeName);
-                    player.sendMessage(removedMessage);
-                } catch (IOException e) {
-                    // Maneja cualquier excepción
-                    e.printStackTrace();
+                            // Mensaje de confirmación
+                            String homeRemoved = config.getString("messages.home-removed");
+                            String removedMessage = ChatColor.translateAlternateColorCodes('&', homeRemoved);
+                            removedMessage = removedMessage.replace("%home%", homeName);
+                            player.sendMessage(removedMessage);
+                        } catch (IOException e) {
+                            // Maneja cualquier excepción
+                            e.printStackTrace();
+                        }
+
+                        // Recarga el inventario después de eliminar el hogar
+                        player.closeInventory();
+                    }
                 }
-
-                // Recarga el inventario después de eliminar el hogar
-                player.closeInventory();
             }
         }
     }
+
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+
+        // Verifica si el jugador está en proceso de teletransporte
+        if (teleportingPlayers.contains(player)) {
+            // Cancela la tarea de teletransporte
+            BukkitRunnable teleportTask = teleportTasks.get(player);
+            if (teleportTask != null) {
+                teleportTask.cancel();
+                teleportTasks.remove(player);
+            }
+
+            // Obtiene el mensaje de cancelación de la configuración
+            String teleportCancelledMessage = ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.teleport-cancelled"));
+
+            // Envía el mensaje al jugador
+            player.sendMessage(teleportCancelledMessage);
+
+            // Limpia el estado del jugador
+            teleportingPlayers.remove(player);
+        }
+    }
+
 
     private void openMainMenu(Player player) {
         FileConfiguration config = plugin.getConfig();
@@ -424,14 +504,26 @@ public class Menu implements Listener {
                 return;
             }
 
+            // Obtén el límite de hogares desde los permisos del jugador
+            int maxHomes = getMaxHomesForPlayer(player);
+
+            // Verifica cuántos hogares tiene el jugador
+            List<String> homes = playerConfig.getStringList("homes");
+            if (homes.size() >= maxHomes) {
+                // El jugador ha alcanzado el límite de hogares, notifica al jugador
+                String homeLimitReached = config.getString("messages.home-limit-reached");
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', homeLimitReached.replace("%limit%", String.valueOf(maxHomes))));
+                event.setCancelled(true);
+                return;
+            }
+
             // Guarda el nombre de la casa en el mapa
             pendingHomeNames.put(player, homeName);
 
             // Cancela el evento para evitar que el mensaje de chat aparezca en el chat global
             event.setCancelled(true);
 
-            // Obtén la lista de hogares del jugador y agrega el nuevo hogar
-            List<String> homes = playerConfig.getStringList("homes");
+            // Agrega el nuevo hogar a la lista de hogares del jugador
             homes.add(homeName);
             playerConfig.set("homes", homes);
 
@@ -441,11 +533,8 @@ public class Menu implements Listener {
             try {
                 playerConfig.save(playerFile);
 
-                // Lectura de la config
-                String path4 = "messages.home-established";
-
                 // Envía un mensaje al jugador confirmando que se ha establecido su hogar
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString(path4)));
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-established")));
             } catch (IOException e) {
                 // Maneja cualquier excepción
                 e.printStackTrace();
@@ -455,5 +544,28 @@ public class Menu implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> pendingHomeNames.remove(player), 20);
         }
     }
+
+    private int getMaxHomesForPlayer(Player player) {
+        int maxHomes = Integer.MAX_VALUE; // No hay límite por defecto
+
+        for (PermissionAttachmentInfo permInfo : player.getEffectivePermissions()) {
+            String permission = permInfo.getPermission();
+            if (permission.startsWith("sethome.maxhomes.")) {
+                try {
+                    int homes = Integer.parseInt(permission.split("\\.")[2]);
+                    if (homes > 0) {
+                        maxHomes = homes;
+                    }
+                } catch (NumberFormatException e) {
+                    // Maneja el caso en que el permiso no tenga un número válido
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return maxHomes;
+    }
+
+
 }
 

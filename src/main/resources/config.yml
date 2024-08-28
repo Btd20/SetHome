@@ -2,7 +2,7 @@
 #         SetHome        #
 ##########################
 # Author: Beeted_
-# Version: 1.1
+# Version: 1.6
 
 # For support: https://discord.gg/ncTMjcNWPx
 # If you liked the plugin, I would greatly appreciate a review on the Spigot page :)
@@ -46,8 +46,15 @@ messages:
   teleported: "&aYou have traveled home: &7%home%"
   home-not-found: "&4Error: Home coordinates not found."
   home-removed: "&cYour home &b%home% &chas been removed."
+  home-limit-reached: "&cYou have reached the maximum number of homes allowed (%limit%)."
   home-exists: "&4A home with that name already exists. Please choose a different name."
   enter-home-name: "&eEnter the name for your home in the chat. Type &7cancel &eif you want to cancel."
   home-cancelled: "&cYou have canceled the creation of the home."
   no-permissions: "&4You don't have permissions."
+  no-reload-permissions: "&cYou don't have permission to reload the plugin!"
   plugin-reloaded: "&aPlugin reloaded successfully!"
+  teleport-cooldown: "&aYou are being teleported in &7%seconds% &aseconds. Don't move."
+  teleport-in-progress: "&cYou already have a teleport in progress. Wait to make a new one."
+  teleport-cancelled: "&cYour teleport has been canceled because you have moved."
+
+teleport-cooldown: 5

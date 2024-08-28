@@ -18,6 +18,7 @@ public final class SetHome extends JavaPlugin {
         pm.registerEvents(new Menu(this), this);
         getConfig().options().copyDefaults();
         getCommand("home").setExecutor(new HomeCommandExecutor(this));
+        getCommand("home").setTabCompleter(new HomeTabCompleter());
         saveDefaultConfig();
     }
 
