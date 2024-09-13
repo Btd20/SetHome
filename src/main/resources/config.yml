@@ -39,6 +39,20 @@ homes-menu:
       - "&c(Right-Click to delete)"
       - "&a(Left-Click to teleport)"
 
+confirmation-menu:
+  gui-title: "&cConfirm deletion"
+  confirm-item:
+    display-name: "&aConfirm"
+    lore:
+      - "&7Click to confirm the"
+      - "&7deletion of the home."
+  cancel-item:
+    display-name: "&cCancel"
+    lore:
+      - "&7Click to cancel the "
+      - "&7deletion of the home."
+
+
 # Customize the messages.
 messages:
   home-established: "&aYour home has been established!"
@@ -61,13 +75,13 @@ messages:
 # They can only be activated if the cooldown is greater than 0
 titles:
   cooldown-title:
-    enable: false
+    enable: true
     teleport-title: "&aTeleporting..."
     teleport-subtitle: "&eTeleporting in %seconds% seconds..."
   static-title:
-    enable: true
+    enable: false
     teleport-title: "&aTeleporting..."
     teleport-subtitle: "&eTeleporting in %seconds% seconds..."
 
 teleport-cooldown: 5
-cancel-on-move: false
+cancel-on-move: true

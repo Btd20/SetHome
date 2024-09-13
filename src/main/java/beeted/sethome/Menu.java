@@ -20,6 +20,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Menu implements Listener {
 
@@ -303,35 +304,86 @@ public class Menu implements Listener {
                 // Verifica si el clic es del tipo derecho y el ítem es una cama roja
                 if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
                     if (homeName != null) {
-                        // Elimina el hogar del jugador
-                        File dataFolder = new File(plugin.getDataFolder(), "data");
-                        File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
-                        YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
-
-                        List<String> homes = playerConfig.getStringList("homes");
-                        homes.remove(homeName);
-                        playerConfig.set("homes", homes);
-                        playerConfig.set(homeName, null); // Elimina las coordenadas del hogar
-
-                        try {
-                            playerConfig.save(playerFile);
-
-                            // Mensaje de confirmación
-                            String homeRemoved = config.getString("messages.home-removed");
-                            String removedMessage = ChatColor.translateAlternateColorCodes('&', homeRemoved);
-                            removedMessage = removedMessage.replace("%home%", homeName);
-                            player.sendMessage(removedMessage);
-                        } catch (IOException e) {
-                            // Maneja cualquier excepción
-                            e.printStackTrace();
-                        }
-
-                        // Recarga el inventario después de eliminar el hogar
-                        player.closeInventory();
+                        // Abre el menú de confirmación
+                        openConfirmationMenu(player, homeName);
                     }
                 }
             }
         }
+
+        // Verifica si el inventario es el menú de confirmación
+        if (event.getView().getTitle().equals(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title")))) {
+            event.setCancelled(true); // Cancela el evento para evitar que el jugador mueva los ítems
+
+            // Obtiene el ítem que ha sido clicado
+            ItemStack clickedItem = event.getCurrentItem();
+            String confirmItemName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.confirm-item.display-name"));
+            String cancelItemName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.cancel-item.display-name"));
+
+            if (clickedItem != null && clickedItem.getItemMeta() != null) {
+                String itemName = clickedItem.getItemMeta().getDisplayName();
+
+                // Confirmar la eliminación del hogar
+                if (itemName.equals(confirmItemName)) {
+                    // Elimina el hogar
+                    File dataFolder = new File(plugin.getDataFolder(), "data");
+                    File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
+                    YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+
+                    List<String> homes = playerConfig.getStringList("homes");
+                    homes.remove(pendingHomeNames.get(player)); // Usa el nombre del hogar pendiente
+                    playerConfig.set("homes", homes);
+                    playerConfig.set(pendingHomeNames.get(player), null); // Elimina las coordenadas del hogar
+
+                    try {
+                        playerConfig.save(playerFile);
+                        // Mensaje de confirmación
+                        String homeRemoved = config.getString("messages.home-removed");
+                        String removedMessage = ChatColor.translateAlternateColorCodes('&', homeRemoved);
+                        removedMessage = removedMessage.replace("%home%", pendingHomeNames.get(player));
+                        player.sendMessage(removedMessage);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    player.closeInventory();
+                }
+
+                // Cancelar la eliminación del hogar
+                if (itemName.equals(cancelItemName)) {
+                    player.closeInventory();
+                }
+            }
+        }
+    }
+
+    private void openConfirmationMenu(Player player, String homeName) {
+        FileConfiguration config = plugin.getConfig();
+        Inventory inv = Bukkit.createInventory(null, 9, ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title")));
+
+        ItemStack confirmItem = new ItemStack(Material.GREEN_CONCRETE);
+        ItemMeta confirmMeta = confirmItem.getItemMeta();
+        if (confirmMeta != null) {
+            confirmMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.confirm-item.display-name")));
+            confirmMeta.setLore(config.getStringList("confirmation-menu.confirm-item.lore").stream()
+                    .map(line -> ChatColor.translateAlternateColorCodes('&', line))
+                    .collect(Collectors.toList()));
+            confirmItem.setItemMeta(confirmMeta);
+        }
+
+        ItemStack cancelItem = new ItemStack(Material.RED_CONCRETE);
+        ItemMeta cancelMeta = cancelItem.getItemMeta();
+        if (cancelMeta != null) {
+            cancelMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.cancel-item.display-name")));
+            cancelMeta.setLore(config.getStringList("confirmation-menu.cancel-item.lore").stream()
+                    .map(line -> ChatColor.translateAlternateColorCodes('&', line))
+                    .collect(Collectors.toList()));
+            cancelItem.setItemMeta(cancelMeta);
+        }
+
+        inv.setItem(3, confirmItem);
+        inv.setItem(5, cancelItem);
+
+        player.openInventory(inv);
     }
 
 
