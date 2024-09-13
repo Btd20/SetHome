@@ -28,10 +28,10 @@ public class HomeCommandExecutor implements CommandExecutor {
             // Verifica si el remitente tiene permisos para recargar el plugin
             if (sender.hasPermission("sethome.reload")) {
                 plugin.reloadConfig();
-                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.plugin-reloaded", "&aPlugin reloaded successfully!")));
+                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.plugin-reloaded")));
                 return true;
             } else {
-                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions", "&cYou don't have permission to reload the plugin!")));
+                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions")));
                 return true;
             }
         }
@@ -40,7 +40,7 @@ public class HomeCommandExecutor implements CommandExecutor {
 
         // Verifica si el jugador tiene permisos para usar cualquier comando de sethome
         if (!player.hasPermission("sethome.use")) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions", "&cYou don't have permission to use this command!")));
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions")));
             return true;
         }
 

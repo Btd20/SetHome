@@ -147,12 +147,12 @@ public class Menu implements Listener {
 
         // Verifica si el inventario es el menú de hogar
         if (event.getView().getTitle().equals(inventoryTitle)) {
-            event.setCancelled(true); // Cancela el evento para evitar que el jugador mueva los items
+            event.setCancelled(true); // Cancela el evento para evitar que el jugador mueva los ítems
 
-            // Obtiene el item que ha sido clicado
+            // Obtiene el ítem que ha sido clicado
             ItemStack clickedItem = event.getCurrentItem();
 
-            // Verifica si el item es el de establecer hogar
+            // Verifica si el ítem es el de establecer hogar
             String setHomeItemName = ChatColor.translateAlternateColorCodes('&', config.getString("menu.set-home-item.display-name"));
             if (clickedItem != null && clickedItem.getItemMeta() != null &&
                     clickedItem.getItemMeta().getDisplayName().equals(setHomeItemName)) {
@@ -167,7 +167,7 @@ public class Menu implements Listener {
                 player.closeInventory();
             }
 
-            // Verifica si el item es el de la puerta
+            // Verifica si el ítem es el de la puerta
             String yourHomesItemName = ChatColor.translateAlternateColorCodes('&', config.getString("menu.your-homes-item.display-name"));
             if (clickedItem != null && clickedItem.getItemMeta() != null &&
                     clickedItem.getItemMeta().getDisplayName().equals(yourHomesItemName)) {
@@ -181,9 +181,9 @@ public class Menu implements Listener {
 
         // Verifica si el inventario clicado es el inventario "Your homes"
         if (event.getView().getTitle().equals(ChatColor.translateAlternateColorCodes('&', config.getString("homes-menu.gui-title")))) {
-            event.setCancelled(true); // Cancela el evento para evitar que el jugador tome los items
+            event.setCancelled(true); // Cancela el evento para evitar que el jugador tome los ítems
 
-            // Obtiene el item que ha sido clicado
+            // Obtiene el ítem que ha sido clicado
             ItemStack clickedItem = event.getCurrentItem();
 
             String goBackItemPath = "homes-menu.go-back-item";
@@ -205,7 +205,7 @@ public class Menu implements Listener {
             if (clickedItem != null && clickedItem.getItemMeta() != null) {
                 String homeName = clickedItem.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING);
 
-                // Verifica si el clic es del tipo izquierdo y el item es una cama roja
+                // Verifica si el clic es del tipo izquierdo y el ítem es una cama roja
                 if (event.getClick() == ClickType.LEFT && clickedItem.getType() == Material.RED_BED) {
                     if (homeName != null) {
                         // Verifica si el jugador ya tiene un cooldown de teletransporte
@@ -221,6 +221,32 @@ public class Menu implements Listener {
 
                         // Marca al jugador como teletransportándose
                         teleportingPlayers.add(player);
+
+                        int cooldownSeconds = (int) (cooldownTime / 1000);
+
+                        if (cooldownSeconds > 0) {
+                            // Verifica si cooldown-title está habilitado
+                            if (config.getBoolean("titles.cooldown-title.enable")) {
+                                String teleportTitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.cooldown-title.teleport-title"));
+                                String teleportSubtitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.cooldown-title.teleport-subtitle"));
+
+                                // Envía título y subtítulo con el contador
+                                int totalSeconds = (int) (cooldownTime / 1000);
+                                for (int i = totalSeconds; i > 0; i--) {
+                                    final int secondsLeft = i;
+                                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                                        player.sendTitle(teleportTitle.replace("%seconds%", String.valueOf(secondsLeft)), teleportSubtitle.replace("%seconds%", String.valueOf(secondsLeft)), 10, 20, 10);
+                                    }, (totalSeconds - i) * 20L); // 20 ticks por segundo
+                                }
+                            } else if (config.getBoolean("titles.static-title.enable")) {
+                                String teleportTitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-title"));
+                                String teleportSubtitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-subtitle"));
+
+                                // Envía título y subtítulo estáticos
+                                int totalSeconds = (int) (cooldownTime / 1000);
+                                player.sendTitle(teleportTitle.replace("%seconds%", String.valueOf(totalSeconds)), teleportSubtitle.replace("%seconds%", String.valueOf(totalSeconds)), 10, totalSeconds * 20, 10);
+                            }
+                        }
 
                         // Tarea para teletransportar al jugador después del cooldown
                         BukkitRunnable teleportTask = new BukkitRunnable() {
@@ -269,12 +295,12 @@ public class Menu implements Listener {
                         // Almacena la tarea programada para poder cancelarla si es necesario
                         teleportTasks.put(player, teleportTask);
 
-                        // Cierra el inventario para que el jugador no haga clic en otros items durante el cooldown
+                        // Cierra el inventario para que el jugador no haga clic en otros ítems durante el cooldown
                         player.closeInventory();
                     }
                 }
 
-                // Verifica si el clic es del tipo derecho y el item es una cama roja
+                // Verifica si el clic es del tipo derecho y el ítem es una cama roja
                 if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
                     if (homeName != null) {
                         // Elimina el hogar del jugador
@@ -308,30 +334,51 @@ public class Menu implements Listener {
         }
     }
 
+
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
 
         // Verifica si el jugador está en proceso de teletransporte
         if (teleportingPlayers.contains(player)) {
-            // Cancela la tarea de teletransporte
-            BukkitRunnable teleportTask = teleportTasks.get(player);
-            if (teleportTask != null) {
-                teleportTask.cancel();
-                teleportTasks.remove(player);
+            FileConfiguration config = plugin.getConfig();
+
+            // Verifica si la cancelación por movimiento está habilitada
+            boolean cancelOnMove = config.getBoolean("cancel-on-move");
+            if (!cancelOnMove) {
+                return; // Si está deshabilitado, no hacemos nada
             }
 
-            // Obtiene el mensaje de cancelación de la configuración
-            String teleportCancelledMessage = ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("messages.teleport-cancelled"));
+            // Obtiene las ubicaciones de inicio y destino del movimiento
+            Location from = event.getFrom();
+            Location to = event.getTo();
 
-            // Envía el mensaje al jugador
-            player.sendMessage(teleportCancelledMessage);
+            // Solo cancela el teletransporte si el jugador se mueve a otro bloque
+            if (from.getBlockX() != to.getBlockX() ||
+                    from.getBlockY() != to.getBlockY() ||
+                    from.getBlockZ() != to.getBlockZ()) {
 
-            // Limpia el estado del jugador
-            teleportingPlayers.remove(player);
+                // Cancela la tarea de teletransporte
+                BukkitRunnable teleportTask = teleportTasks.get(player);
+                if (teleportTask != null) {
+                    teleportTask.cancel();
+                    teleportTasks.remove(player);
+                }
+
+                // Obtiene el mensaje de cancelación de la configuración
+                String teleportCancelledMessage = ChatColor.translateAlternateColorCodes('&', config.getString("messages.teleport-cancelled"));
+
+                // Reinicia el titulo del jugador
+                player.resetTitle();
+
+                // Envía el mensaje al jugador
+                player.sendMessage(teleportCancelledMessage);
+
+                // Limpia el estado del jugador
+                teleportingPlayers.remove(player);
+            }
         }
     }
-
 
     private void openMainMenu(Player player) {
         FileConfiguration config = plugin.getConfig();

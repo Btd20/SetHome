@@ -2,7 +2,7 @@
 #         SetHome        #
 ##########################
 # Author: Beeted_
-# Version: 1.6
+# Version: 1.7
 
 # For support: https://discord.gg/ncTMjcNWPx
 # If you liked the plugin, I would greatly appreciate a review on the Spigot page :)
@@ -57,4 +57,17 @@ messages:
   teleport-in-progress: "&cYou already have a teleport in progress. Wait to make a new one."
   teleport-cancelled: "&cYour teleport has been canceled because you have moved."
 
+# You should only set a single title to true.
+# They can only be activated if the cooldown is greater than 0
+titles:
+  cooldown-title:
+    enable: false
+    teleport-title: "&aTeleporting..."
+    teleport-subtitle: "&eTeleporting in %seconds% seconds..."
+  static-title:
+    enable: true
+    teleport-title: "&aTeleporting..."
+    teleport-subtitle: "&eTeleporting in %seconds% seconds..."
+
 teleport-cooldown: 5
+cancel-on-move: false
