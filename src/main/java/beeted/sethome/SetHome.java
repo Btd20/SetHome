@@ -13,6 +13,11 @@ public final class SetHome extends JavaPlugin {
     ConsoleCommandSender console = Bukkit.getConsoleSender();
     @Override
     public void onEnable() {
+
+        //Metrics
+        int pluginId = 	23348;
+        Metrics metrics = new Metrics(this, pluginId);
+
         // Plugin startup logic
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new Menu(this), this);

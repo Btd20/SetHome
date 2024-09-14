@@ -20,7 +20,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Menu implements Listener {
 
@@ -358,34 +357,30 @@ public class Menu implements Listener {
 
     private void openConfirmationMenu(Player player, String homeName) {
         FileConfiguration config = plugin.getConfig();
-        Inventory inv = Bukkit.createInventory(null, 9, ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title")));
+        Inventory confirmationMenu = Bukkit.createInventory(null, 9, ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title")));
 
-        ItemStack confirmItem = new ItemStack(Material.GREEN_CONCRETE);
+        // Crear ítem de confirmación
+        ItemStack confirmItem = new ItemStack(Material.GREEN_WOOL); // Usar el material que desees
         ItemMeta confirmMeta = confirmItem.getItemMeta();
-        if (confirmMeta != null) {
-            confirmMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.confirm-item.display-name")));
-            confirmMeta.setLore(config.getStringList("confirmation-menu.confirm-item.lore").stream()
-                    .map(line -> ChatColor.translateAlternateColorCodes('&', line))
-                    .collect(Collectors.toList()));
-            confirmItem.setItemMeta(confirmMeta);
-        }
+        confirmMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.confirm-item.display-name")));
+        confirmItem.setItemMeta(confirmMeta);
 
-        ItemStack cancelItem = new ItemStack(Material.RED_CONCRETE);
+        // Crear ítem de cancelación
+        ItemStack cancelItem = new ItemStack(Material.RED_WOOL); // Usar el material que desees
         ItemMeta cancelMeta = cancelItem.getItemMeta();
-        if (cancelMeta != null) {
-            cancelMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.cancel-item.display-name")));
-            cancelMeta.setLore(config.getStringList("confirmation-menu.cancel-item.lore").stream()
-                    .map(line -> ChatColor.translateAlternateColorCodes('&', line))
-                    .collect(Collectors.toList()));
-            cancelItem.setItemMeta(cancelMeta);
-        }
+        cancelMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.cancel-item.display-name")));
+        cancelItem.setItemMeta(cancelMeta);
 
-        inv.setItem(3, confirmItem);
-        inv.setItem(5, cancelItem);
+        // Agregar ítems al inventario
+        confirmationMenu.setItem(3, confirmItem);
+        confirmationMenu.setItem(5, cancelItem);
 
-        player.openInventory(inv);
+        // Mostrar el inventario al jugador
+        player.openInventory(confirmationMenu);
+
+        // Guarda el nombre del hogar pendiente para usarlo en la confirmación
+        pendingHomeNames.put(player, homeName);
     }
-
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {

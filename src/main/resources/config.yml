@@ -40,18 +40,11 @@ homes-menu:
       - "&a(Left-Click to teleport)"
 
 confirmation-menu:
-  gui-title: "&cConfirm deletion"
+  gui-title: "&cConfirm Deletion"
   confirm-item:
     display-name: "&aConfirm"
-    lore:
-      - "&7Click to confirm the"
-      - "&7deletion of the home."
   cancel-item:
     display-name: "&cCancel"
-    lore:
-      - "&7Click to cancel the "
-      - "&7deletion of the home."
-
 
 # Customize the messages.
 messages:
