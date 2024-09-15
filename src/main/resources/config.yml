@@ -35,6 +35,7 @@ homes-menu:
   close-item: "&4Close"
   home-item:
     display-name: "&7&lHOME &8» &b%home%"
+    #You can use %home% and %world% on lore.
     lore:
       - "&c(Right-Click to delete)"
       - "&a(Left-Click to teleport)"
