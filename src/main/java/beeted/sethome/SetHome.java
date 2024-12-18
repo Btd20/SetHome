@@ -11,8 +11,17 @@ import java.io.File;
 
 public final class SetHome extends JavaPlugin {
     ConsoleCommandSender console = Bukkit.getConsoleSender();
+    private HomeCommandExecutor commandExecutor;
     @Override
     public void onEnable() {
+
+        String userCommand = getConfig().getString("menu.open-command", "/home").replace("/", "");
+
+        // Crear el ejecutor de comandos
+        commandExecutor = new HomeCommandExecutor(this);
+        // Registrar el comando dinámico
+        HomeCommandExecutor.registerDynamicCommand(this, userCommand);
+        getLogger().info("SetHome plugin enabled with command: /" + userCommand);
 
         //Metrics
         int pluginId = 	23348;
@@ -23,8 +32,13 @@ public final class SetHome extends JavaPlugin {
         pm.registerEvents(new Menu(this), this);
         getConfig().options().copyDefaults();
         getCommand("home").setExecutor(new HomeCommandExecutor(this));
-        getCommand("home").setTabCompleter(new HomeTabCompleter());
+        getCommand("home").setTabCompleter(new HomeTabCompleter(this));
         saveDefaultConfig();
+
+    }
+
+    public HomeCommandExecutor getCommandExecutor() {
+        return commandExecutor;
     }
 
     @Override

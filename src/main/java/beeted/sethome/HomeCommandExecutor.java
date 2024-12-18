@@ -1,11 +1,14 @@
 package beeted.sethome;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
+import org.bukkit.command.*;
+import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.lang.reflect.Field;
 
 public class HomeCommandExecutor implements CommandExecutor {
     private final SetHome plugin;
@@ -17,37 +20,53 @@ public class HomeCommandExecutor implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         FileConfiguration config = plugin.getConfig();
+        String userCommand = config.getString("menu.open-command", "/home").replace("/", "");
 
-        // Verifica si el comando es /home
-        if (!label.equalsIgnoreCase("home")) {
+        // Verifica si el comando coincide con el configurado
+        if (!label.equalsIgnoreCase(userCommand)) {
             return false;
         }
 
-        // Verifica si el comando es ejecutado por un jugador para otros comandos "/home"
         if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
-            // Verifica si el remitente tiene permisos para recargar el plugin
             if (sender.hasPermission("sethome.reload")) {
                 plugin.reloadConfig();
-                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.plugin-reloaded")));
-                return true;
+                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.plugin-reloaded", "&aPlugin reloaded successfully.")));
             } else {
-                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions")));
-                return true;
+                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions", "&cYou don't have permission to do that.")));
             }
-        }
-
-        Player player = (Player) sender;
-
-        // Verifica si el jugador tiene permisos para usar cualquier comando de sethome
-        if (!player.hasPermission("sethome.use")) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions")));
             return true;
         }
 
-        // Lógica adicional para otros subcomandos de "/home" aquí
-        // Por ejemplo, mostrar un menú o listar hogares
-
-        // Si no se ha manejado ningún caso específico, devuelve false para mostrar el uso del comando
-        return false;
+        if (sender instanceof Player) {
+            Player player = (Player) sender;
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aOpening the home menu..."));
+            // Lógica para abrir el menú
+        } else {
+            sender.sendMessage(ChatColor.RED + "This command can only be executed by a player.");
+        }
+        return true;
     }
+
+    public static void registerDynamicCommand(SetHome plugin, String commandName) {
+        try {
+            // Obtener el CommandMap
+            Field commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+            commandMapField.setAccessible(true);
+            CommandMap commandMap = (CommandMap) commandMapField.get(Bukkit.getServer());
+
+            // Crear y registrar el comando dinámico
+            Command dynamicCommand = new BukkitCommand(commandName) {
+                @Override
+                public boolean execute(CommandSender sender, String label, String[] args) {
+                    return plugin.getCommandExecutor().onCommand(sender, this, label, args);
+                }
+            };
+            ((BukkitCommand) dynamicCommand).setDescription("Open the home menu.");
+            commandMap.register(plugin.getDescription().getName(), dynamicCommand);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to register the dynamic command: " + commandName);
+            e.printStackTrace();
+        }
+    }
+
 }

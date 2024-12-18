@@ -3,6 +3,7 @@ package beeted.sethome;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -10,12 +11,22 @@ import java.util.List;
 
 public class HomeTabCompleter implements TabCompleter {
 
+    private final SetHome plugin;
+
+    public HomeTabCompleter(SetHome plugin) {
+        this.plugin = plugin;
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> suggestions = new ArrayList<>();
+        FileConfiguration config = plugin.getConfig();
 
-        // Asegúrate de que el comando sea /home
-        if (command.getName().equalsIgnoreCase("home")) {
+        // Obtén el comando configurado en "menu.open-command"
+        String configuredCommand = config.getString("menu.open-command", "/home").replace("/", "");
+
+        // Verifica si el comando registrado o el alias coincide con el comando configurado
+        if (command.getName().equalsIgnoreCase("home") || alias.equalsIgnoreCase(configuredCommand)) {
             // Verifica si el remitente es un jugador
             if (sender instanceof Player) {
                 Player player = (Player) sender;

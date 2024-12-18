@@ -116,15 +116,6 @@ public class Metrics {
         metricsBase.shutdown();
     }
 
-    /**
-     * Adds a custom chart.
-     *
-     * @param chart The chart to add.
-     */
-    public void addCustomChart(CustomChart chart) {
-        metricsBase.addCustomChart(chart);
-    }
-
     private void appendPlatformData(JsonObjectBuilder builder) {
         builder.appendField("playerAmount", getPlayerAmount());
         builder.appendField("onlineMode", Bukkit.getOnlineMode() ? 1 : 0);

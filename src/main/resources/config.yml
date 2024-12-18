@@ -1,18 +1,22 @@
 ##########################
-#         SetHome        #
+#     SetHome GUI        #
 ##########################
 # Author: Beeted_
-# Version: 1.7.3
+# Version: 1.8.0
 
-# For support: https://discord.gg/ncTMjcNWPx
+# For support: https://discord.gg/3k4MbQ3KNv
+# Premium plugin (Support me): https://builtbybit.com/resources/sethome-gui.51982
 # If you liked the plugin, I would greatly appreciate a review on the Spigot page :)
 
 # Customize the menu.
 menu:
   open-command: /home
   gui-title: "&9&lHome Menu &8⌂"
+  glass-pane-color: "GRAY"
+  center-glass-color: "LIGHT_BLUE"
   info-title: "&8❮❮❮ &7Set Home &8| &7Go Home &8❯❯❯"
   set-home-item:
+    material: RED_BED
     display-name: "&7➤ &3&lSet Home"
     lore:
       - "&7With this item you can"
@@ -21,6 +25,7 @@ menu:
       - ""
       - "&a(Left-Click to set home)"
   your-homes-item:
+    material: OAK_DOOR
     display-name: "&7➤ &e&lYour homes"
     lore:
       - "&7With this object you can"
@@ -62,7 +67,6 @@ messages:
   home-exists: "&4A home with that name already exists. Please choose a different name."
   enter-home-name: "&eEnter the name for your home in the chat. Type &7cancel &eif you want to cancel."
   home-cancelled: "&cYou have canceled the creation of the home."
-  no-permissions: "&4You don't have permissions."
   no-reload-permissions: "&cYou don't have permission to reload the plugin!"
   plugin-reloaded: "&aPlugin reloaded successfully!"
   teleport-cooldown: "&aYou are being teleported in &7%seconds% &aseconds. Don't move."

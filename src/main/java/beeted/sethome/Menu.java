@@ -13,6 +13,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -20,6 +21,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+
+import static java.awt.SystemColor.menu;
 
 public class Menu implements Listener {
 
@@ -51,85 +54,114 @@ public class Menu implements Listener {
         FileConfiguration config = plugin.getConfig();
         String path1 = "menu.open-command";
 
-        // Verifica si el jugador ha ejecutado el comando "/menu"
+        // Verifica si el jugador ha ejecutado el comando configurado
         if (event.getMessage().equalsIgnoreCase(config.getString(path1))) {
-            if (player.hasPermission("sethome.use")) {
 
-                // Lectura de la config
-                String path2 = "menu.gui-title";
+            // Lectura de la config
+            String path2 = "menu.gui-title";
 
-                // Crea un nuevo inventario para el menú
-                Inventory menu = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', config.getString(path2)));
+            // Crea un nuevo inventario para el menú
+            Inventory menu = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', config.getString(path2)));
 
-                // Crea los dos items en el medio del menú
-                ItemStack setHomeItem = new ItemStack(Material.RED_BED);
-                ItemMeta setHomeMeta = setHomeItem.getItemMeta();
-
-                String setHomeItemPath = "menu.set-home-item";
-                String setHomeDisplayName = config.getString(setHomeItemPath + ".display-name");
-                List<String> setHomeLore = config.getStringList(setHomeItemPath + ".lore");
-
-                // Configura el nombre del ítem con colores
-                setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', setHomeDisplayName));
-
-                // Configura el lore del ítem con colores
-                for (int i = 0; i < setHomeLore.size(); i++) {
-                    setHomeLore.set(i, ChatColor.translateAlternateColorCodes('&', setHomeLore.get(i)));
-                }
-                setHomeMeta.setLore(setHomeLore);
-
-                setHomeItem.setItemMeta(setHomeMeta);
-
-                /////
-                // Crea un nuevo objeto para el inventario
-                ItemStack miObjeto = new ItemStack(Material.NETHER_STAR);
-                ItemMeta miObjetoMeta = miObjeto.getItemMeta();
-
-                //Lectura de la config
-                String path5 = "menu.info-title";
-
-                miObjetoMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString(path5)));
-                miObjeto.setItemMeta(miObjetoMeta);
-
-                // Agrega el objeto al inventario
-                menu.setItem(13, miObjeto);
-                /////
-
-                // Agrega los items al inventario
-                menu.setItem(11, setHomeItem);
-
-                // Abre el menú para el jugador
-                player.openInventory(menu);
-
-                // Cancela la ejecución del comando para evitar que el servidor lo procese
-                event.setCancelled(true);
-
-                ItemStack homeListItem = new ItemStack(Material.OAK_DOOR);
-                ItemMeta doorItemMeta = homeListItem.getItemMeta();
-
-                String path6 = "menu.your-homes-item";
-                String homeListDisplayName = config.getString(path6 + ".display-name");
-                List<String> homeListLore = config.getStringList(path6 + ".lore");
-
-                // Configura el nombre del ítem con colores
-                doorItemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', homeListDisplayName));
-
-                // Configura el lore del ítem con colores
-                for (int i = 0; i < homeListLore.size(); i++) {
-                    homeListLore.set(i, ChatColor.translateAlternateColorCodes('&', homeListLore.get(i)));
-                }
-                doorItemMeta.setLore(homeListLore);
-
-                homeListItem.setItemMeta(doorItemMeta);
-
-                // Agrega el objeto al inventario
-                menu.setItem(15, homeListItem); // Puedes ajustar la posición del ítem según tus necesidades
-            } else {
-                String permissions = config.getString("no-permissions");
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', permissions));
+            // Configuración del borde
+            String borderGlassColorName = config.getString("menu.glass-pane-color", "GRAY").toUpperCase();
+            Material borderGlassMaterial = Material.matchMaterial(borderGlassColorName + "_STAINED_GLASS_PANE");
+            if (borderGlassMaterial == null) {
+                borderGlassMaterial = Material.GRAY_STAINED_GLASS_PANE; // Valor predeterminado
             }
+            ItemStack borderGlassPane = new ItemStack(borderGlassMaterial);
+            ItemMeta borderGlassMeta = borderGlassPane.getItemMeta();
+            borderGlassMeta.setDisplayName(" ");
+            borderGlassPane.setItemMeta(borderGlassMeta);
+
+            // Rellenar bordes con cristal
+            int[] borderSlots = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26};
+            for (int slot : borderSlots) {
+                menu.setItem(slot, borderGlassPane);
+            }
+
+            // Configuración del cristal central
+            String centerGlassColorName = config.getString("menu.center-glass-color", "LIGHT_BLUE").toUpperCase();
+            Material centerGlassMaterial = Material.matchMaterial(centerGlassColorName + "_STAINED_GLASS_PANE");
+            if (centerGlassMaterial == null) {
+                centerGlassMaterial = Material.LIGHT_BLUE_STAINED_GLASS_PANE; // Valor predeterminado
+            }
+            ItemStack centerGlassPane = new ItemStack(centerGlassMaterial);
+            ItemMeta centerGlassMeta = centerGlassPane.getItemMeta();
+            centerGlassMeta.setDisplayName(" ");
+            centerGlassPane.setItemMeta(centerGlassMeta);
+
+            menu.setItem(10, centerGlassPane);
+            menu.setItem(12, centerGlassPane);
+            menu.setItem(14, centerGlassPane);
+            menu.setItem(16, centerGlassPane);
+
+            // Configuración del ítem "Set Home"
+            String setHomeMaterialName = config.getString("menu.set-home-item.material").toUpperCase();
+            Material setHomeMaterial = Material.matchMaterial(setHomeMaterialName);
+            if (setHomeMaterial == null) {
+                setHomeMaterial = Material.RED_BED; // Valor predeterminado
+            }
+
+            ItemStack setHomeItem = new ItemStack(setHomeMaterial);
+            ItemMeta setHomeMeta = setHomeItem.getItemMeta();
+
+            String setHomeDisplayName = config.getString("menu.set-home-item.display-name");
+            List<String> setHomeLore = config.getStringList("menu.set-home-item.lore");
+
+            // Configura el nombre del ítem con colores
+            setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', setHomeDisplayName));
+
+            // Configura el lore del ítem con colores usando translateAlternateColorCodes
+            for (int i = 0; i < setHomeLore.size(); i++) {
+                setHomeLore.set(i, ChatColor.translateAlternateColorCodes('&', setHomeLore.get(i)));
+            }
+            setHomeMeta.setLore(setHomeLore);
+
+            setHomeItem.setItemMeta(setHomeMeta);
+
+            menu.setItem(11, setHomeItem);
+
+            // Ítem de información (Nether Star sin lore)
+            ItemStack miObjeto = new ItemStack(Material.NETHER_STAR);
+            ItemMeta miObjetoMeta = miObjeto.getItemMeta();
+            miObjetoMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("menu.info-title")));
+            miObjeto.setItemMeta(miObjetoMeta);
+
+            menu.setItem(13, miObjeto);
+
+            // Ítem de lista de hogares
+            String homeListMaterialName = config.getString("menu.your-homes-item.material", "OAK_DOOR").toUpperCase();
+            Material homeListMaterial = Material.matchMaterial(homeListMaterialName);
+            if (homeListMaterial == null) {
+                homeListMaterial = Material.RED_WOOL; // Valor predeterminado
+            }
+
+            ItemStack homeListItem = new ItemStack(homeListMaterial);
+            ItemMeta doorItemMeta = homeListItem.getItemMeta();
+            String path6 = "menu.your-homes-item";
+            String homeListDisplayName = config.getString(path6 + ".display-name");
+            List<String> homeListLore = config.getStringList(path6 + ".lore");
+
+            doorItemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', homeListDisplayName));
+
+            for (int i = 0; i < homeListLore.size(); i++) {
+                homeListLore.set(i, ChatColor.translateAlternateColorCodes('&', homeListLore.get(i)));
+            }
+            doorItemMeta.setLore(homeListLore);
+
+            homeListItem.setItemMeta(doorItemMeta);
+
+            menu.setItem(15, homeListItem);
+
+            // Abre el menú para el jugador
+            player.openInventory(menu);
+
+            // Cancela la ejecución del comando para evitar que el servidor lo procese
+            event.setCancelled(true);
         }
     }
+
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
@@ -448,18 +480,56 @@ public class Menu implements Listener {
         // Crea un nuevo inventario para el menú principal
         Inventory menu = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', config.getString(menuTitlePath)));
 
-        // Agrega los elementos al menú principal (ajusta según tus necesidades)
-        ItemStack setHomeItem = new ItemStack(Material.RED_BED);
+        // Configuración del borde
+        String borderGlassColorName = config.getString("menu.glass-pane-color", "GRAY").toUpperCase();
+        Material borderGlassMaterial = Material.matchMaterial(borderGlassColorName + "_STAINED_GLASS_PANE");
+        if (borderGlassMaterial == null) {
+            borderGlassMaterial = Material.GRAY_STAINED_GLASS_PANE; // Valor predeterminado
+        }
+        ItemStack borderGlassPane = new ItemStack(borderGlassMaterial);
+        ItemMeta borderGlassMeta = borderGlassPane.getItemMeta();
+        borderGlassMeta.setDisplayName(" ");
+        borderGlassPane.setItemMeta(borderGlassMeta);
+
+        // Rellenar bordes con cristal
+        int[] borderSlots = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26};
+        for (int slot : borderSlots) {
+            menu.setItem(slot, borderGlassPane);
+        }
+
+        // Configuración del cristal central
+        String centerGlassColorName = config.getString("menu.center-glass-color", "LIGHT_BLUE").toUpperCase();
+        Material centerGlassMaterial = Material.matchMaterial(centerGlassColorName + "_STAINED_GLASS_PANE");
+        if (centerGlassMaterial == null) {
+            centerGlassMaterial = Material.LIGHT_BLUE_STAINED_GLASS_PANE; // Valor predeterminado
+        }
+        ItemStack centerGlassPane = new ItemStack(centerGlassMaterial);
+        ItemMeta centerGlassMeta = centerGlassPane.getItemMeta();
+        centerGlassMeta.setDisplayName(" ");
+        centerGlassPane.setItemMeta(centerGlassMeta);
+
+        menu.setItem(10, centerGlassPane);
+        menu.setItem(12, centerGlassPane);
+        menu.setItem(14, centerGlassPane);
+        menu.setItem(16, centerGlassPane);
+
+        // Configuración del ítem "Set Home"
+        String setHomeMaterialName = config.getString("menu.set-home-item.material").toUpperCase();
+        Material setHomeMaterial = Material.matchMaterial(setHomeMaterialName);
+        if (setHomeMaterial == null) {
+            setHomeMaterial = Material.RED_BED; // Valor predeterminado
+        }
+
+        ItemStack setHomeItem = new ItemStack(setHomeMaterial);
         ItemMeta setHomeMeta = setHomeItem.getItemMeta();
 
-        String setHomeItemPath = "menu.set-home-item";
-        String setHomeDisplayName = config.getString(setHomeItemPath + ".display-name");
-        List<String> setHomeLore = config.getStringList(setHomeItemPath + ".lore");
+        String setHomeDisplayName = config.getString("menu.set-home-item.display-name");
+        List<String> setHomeLore = config.getStringList("menu.set-home-item.lore");
 
         // Configura el nombre del ítem con colores
         setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', setHomeDisplayName));
 
-        // Configura el lore del ítem con colores
+        // Configura el lore del ítem con colores usando translateAlternateColorCodes
         for (int i = 0; i < setHomeLore.size(); i++) {
             setHomeLore.set(i, ChatColor.translateAlternateColorCodes('&', setHomeLore.get(i)));
         }
@@ -467,25 +537,31 @@ public class Menu implements Listener {
 
         setHomeItem.setItemMeta(setHomeMeta);
 
+        menu.setItem(11, setHomeItem);
+
+        // Ítem de información (Nether Star sin lore)
         ItemStack miObjeto = new ItemStack(Material.NETHER_STAR);
         ItemMeta miObjetoMeta = miObjeto.getItemMeta();
-
-        String infoTitlePath = "menu.info-title";
-
-        miObjetoMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString(infoTitlePath)));
+        miObjetoMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("menu.info-title")));
         miObjeto.setItemMeta(miObjetoMeta);
 
-        ItemStack homeListItem = new ItemStack(Material.OAK_DOOR);
-        ItemMeta doorItemMeta = homeListItem.getItemMeta();
+        menu.setItem(13, miObjeto);
 
+        // Ítem de lista de hogares
+        String homeListMaterialName = config.getString("menu.your-homes-item.material", "OAK_DOOR").toUpperCase();
+        Material homeListMaterial = Material.matchMaterial(homeListMaterialName);
+        if (homeListMaterial == null) {
+            homeListMaterial = Material.RED_WOOL; // Valor predeterminado
+        }
+
+        ItemStack homeListItem = new ItemStack(homeListMaterial);
+        ItemMeta doorItemMeta = homeListItem.getItemMeta();
         String path6 = "menu.your-homes-item";
         String homeListDisplayName = config.getString(path6 + ".display-name");
         List<String> homeListLore = config.getStringList(path6 + ".lore");
 
-        // Configura el nombre del ítem con colores
         doorItemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', homeListDisplayName));
 
-        // Configura el lore del ítem con colores
         for (int i = 0; i < homeListLore.size(); i++) {
             homeListLore.set(i, ChatColor.translateAlternateColorCodes('&', homeListLore.get(i)));
         }
@@ -493,10 +569,9 @@ public class Menu implements Listener {
 
         homeListItem.setItemMeta(doorItemMeta);
 
-        menu.setItem(13, miObjeto);
-        menu.setItem(11, setHomeItem);
         menu.setItem(15, homeListItem);
 
+        // Abre el menú para el jugador
         player.openInventory(menu);
     }
 
