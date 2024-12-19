@@ -1,7 +1,9 @@
 package beeted.sethome;
 
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.PluginManager;
@@ -12,10 +14,17 @@ import java.io.File;
 public final class SetHome extends JavaPlugin {
     ConsoleCommandSender console = Bukkit.getConsoleSender();
     private HomeCommandExecutor commandExecutor;
+    private HomeTabCompleter commandTabExecutor;
     @Override
     public void onEnable() {
 
+        registerConfig();
+
         String userCommand = getConfig().getString("menu.open-command", "/home").replace("/", "");
+
+        PluginManager pm = getServer().getPluginManager();
+
+        Command command = this.getCommand(userCommand);
 
         // Crear el ejecutor de comandos
         commandExecutor = new HomeCommandExecutor(this);
@@ -28,12 +37,16 @@ public final class SetHome extends JavaPlugin {
         Metrics metrics = new Metrics(this, pluginId);
 
         // Plugin startup logic
-        PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new Menu(this), this);
-        getConfig().options().copyDefaults();
-        getCommand("home").setExecutor(new HomeCommandExecutor(this));
-        getCommand("home").setTabCompleter(new HomeTabCompleter(this));
-        saveDefaultConfig();
+        if (command instanceof PluginCommand) {
+            PluginCommand pluginCommand = (PluginCommand) command;
+
+            // Set the executor for the command
+            pluginCommand.setExecutor(new HomeCommandExecutor(this));
+
+            // Set the tab completer for the command
+            pluginCommand.setTabCompleter(new HomeTabCompleter(this));
+        }
 
     }
 
