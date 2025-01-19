@@ -189,6 +189,20 @@ public class Menu implements Listener {
                 // Verifica si el ítem es el de establecer hogar
                 String setHomeItemName = ChatColor.translateAlternateColorCodes('&', config.getString("menu.set-home-item.display-name"));
                 if (clickedItem.getItemMeta().getDisplayName().equals(setHomeItemName)) {
+                    String currentWorld = player.getWorld().getName();
+                    List<String> blacklistedWorlds = config.getStringList("blacklisted-worlds");
+
+                    if (blacklistedWorlds.contains(currentWorld)) {
+                        // Verifica si el jugador tiene el permiso de bypass para este mundo
+                        String bypassPermission = "sethome.world.bypass." + currentWorld;
+                        if (!player.hasPermission(bypassPermission)) {
+                            // Envía un mensaje de error si no tiene permiso para bypass
+                            String errorMessage = config.getString("messages.error-blacklisted-world");
+                            player.sendMessage(ChatColor.translateAlternateColorCodes('&', errorMessage));
+                            return; // Sale del método, no permite establecer el hogar
+                        }
+                    }
+
                     // Guarda el jugador que está estableciendo el hogar
                     pendingHomeNames.put(player, "");
 
@@ -792,18 +806,18 @@ public class Menu implements Listener {
     }
 
     private int getMaxHomesForPlayer(Player player) {
-        int maxHomes = Integer.MAX_VALUE; // No hay límite por defecto
+        int maxHomes = 0; // Valor inicial, asumimos que no tiene permisos por defecto.
 
         for (PermissionAttachmentInfo permInfo : player.getEffectivePermissions()) {
             String permission = permInfo.getPermission();
             if (permission.startsWith("sethome.maxhomes.")) {
                 try {
                     int homes = Integer.parseInt(permission.split("\\.")[2]);
-                    if (homes > 0) {
+                    if (homes > maxHomes) { // Solo actualizamos si el nuevo valor es mayor
                         maxHomes = homes;
                     }
                 } catch (NumberFormatException e) {
-                    // Maneja el caso en que el permiso no tenga un número válido
+                    // Ignoramos permisos mal formados
                     e.printStackTrace();
                 }
             }
@@ -811,7 +825,5 @@ public class Menu implements Listener {
 
         return maxHomes;
     }
-
-
 }
 

@@ -73,6 +73,7 @@ messages:
   teleport-in-progress: "&cYou already have a teleport in progress. Wait to make a new one."
   teleport-cancelled: "&cYour teleport has been canceled because you have moved."
   world-not-found: "&cThe world to travel to has not been found."
+  error-blacklisted-world: "&cYou cannot establish a home in this world."
 
 # You should only set a single title to true.
 # They can only be activated if the cooldown is greater than 0
@@ -85,6 +86,10 @@ titles:
     enable: false
     teleport-title: "&aTeleporting..."
     teleport-subtitle: "&eTeleporting in %seconds% seconds..."
+
+blacklisted-worlds:
+  - world_nether
+  - world_the_end
 
 teleport-cooldown: 5
 cancel-on-move: true
