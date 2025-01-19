@@ -12,10 +12,13 @@ import java.lang.reflect.Field;
 
 public class HomeCommandExecutor implements CommandExecutor {
     private final SetHome plugin;
+    private final HomeImporter homeImporter;
 
     public HomeCommandExecutor(SetHome plugin) {
         this.plugin = plugin;
+        this.homeImporter = new HomeImporter(plugin);
     }
+
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -27,12 +30,30 @@ public class HomeCommandExecutor implements CommandExecutor {
             return false;
         }
 
+        // Comando /home reload
         if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
             if (sender.hasPermission("sethome.reload")) {
                 plugin.reloadConfig();
                 sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.plugin-reloaded", "&aPlugin reloaded successfully.")));
             } else {
                 sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions", "&cYou don't have permission to do that.")));
+            }
+            return true;
+        }
+
+        // Comando /home import Essentials
+        if (args.length > 1 && args[0].equalsIgnoreCase("import") && args[1].equalsIgnoreCase("Essentials")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                if (!player.hasPermission("sethome.import.essentials")) {
+                    player.sendMessage(ChatColor.RED + "You don't have permission to import homes.");
+                    return true;
+                }
+                homeImporter.importHomesFromEssentialsForAllPlayers(player);
+            } else if (sender instanceof ConsoleCommandSender) {
+                homeImporter.importHomesFromEssentialsForAllPlayers(sender);
+            } else {
+                sender.sendMessage(ChatColor.RED + "This command can only be executed by a player or console.");
             }
             return true;
         }
@@ -46,6 +67,7 @@ public class HomeCommandExecutor implements CommandExecutor {
         }
         return true;
     }
+
 
     public static void registerDynamicCommand(SetHome plugin, String commandName) {
         try {

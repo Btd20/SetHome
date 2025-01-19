@@ -37,6 +37,15 @@ public class HomeTabCompleter implements TabCompleter {
                     if (player.hasPermission("sethome.reload")) {
                         suggestions.add("reload");
                     }
+                    if (player.hasPermission("sethome.import.essentials")) {
+                        suggestions.add("import");
+                    }
+                    // Aquí puedes añadir más sugerencias si es necesario
+                }
+                if (args.length == 2) {
+                    if (player.hasPermission("sethome.import.essentials")) {
+                        suggestions.add("Essentials");
+                    }
                     // Aquí puedes añadir más sugerencias si es necesario
                 }
             }
