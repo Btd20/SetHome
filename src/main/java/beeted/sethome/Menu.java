@@ -806,21 +806,32 @@ public class Menu implements Listener {
     }
 
     private int getMaxHomesForPlayer(Player player) {
-        int maxHomes = 0; // Valor inicial, asumimos que no tiene permisos por defecto.
+        FileConfiguration config = plugin.getConfig();
 
+        // Valor predeterminado de la configuración
+        int defaultMaxHomes = config.getInt("default-max-homes", 3); // Por defecto, 3 hogares
+        int maxHomes = 0; // Inicializamos con 0 para priorizar permisos
+
+        // Recorrer los permisos del jugador
         for (PermissionAttachmentInfo permInfo : player.getEffectivePermissions()) {
             String permission = permInfo.getPermission();
             if (permission.startsWith("sethome.maxhomes.")) {
                 try {
                     int homes = Integer.parseInt(permission.split("\\.")[2]);
-                    if (homes > maxHomes) { // Solo actualizamos si el nuevo valor es mayor
+                    // Actualizar solo si es mayor al valor actual
+                    if (homes > maxHomes) {
                         maxHomes = homes;
                     }
                 } catch (NumberFormatException e) {
-                    // Ignoramos permisos mal formados
+                    // Ignoramos los permisos mal formados
                     e.printStackTrace();
                 }
             }
+        }
+
+        // Si no se encontró ningún permiso relevante, usar el valor por defecto
+        if (maxHomes == 0) {
+            maxHomes = defaultMaxHomes;
         }
 
         return maxHomes;

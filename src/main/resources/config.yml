@@ -93,3 +93,4 @@ blacklisted-worlds:
 
 teleport-cooldown: 5
 cancel-on-move: true
+default-max-homes: 3
