@@ -13,10 +13,12 @@ import java.lang.reflect.Field;
 public class HomeCommandExecutor implements CommandExecutor {
     private final SetHome plugin;
     private final HomeImporter homeImporter;
+    private final Menu menu;
 
     public HomeCommandExecutor(SetHome plugin) {
         this.plugin = plugin;
         this.homeImporter = new HomeImporter(plugin);
+        this.menu = new Menu(plugin);
     }
 
 
@@ -60,10 +62,8 @@ public class HomeCommandExecutor implements CommandExecutor {
 
         if (sender instanceof Player) {
             Player player = (Player) sender;
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', "&aOpening the home menu..."));
             // Lógica para abrir el menú
-        } else {
-            sender.sendMessage(ChatColor.RED + "This command can only be executed by a player.");
+            menu.openMainMenu(player);
         }
         return true;
     }

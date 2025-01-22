@@ -6,7 +6,7 @@
 
     <groupId>beeted</groupId>
     <artifactId>5</artifactId>
-    <version>1.9.0</version>
+    <version>1.9.2</version>
     <packaging>jar</packaging>
 
     <name>SetHome</name>

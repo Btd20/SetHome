@@ -487,7 +487,7 @@ public class Menu implements Listener {
         }
     }
 
-    private void openMainMenu(Player player) {
+    public void openMainMenu(Player player) {
         FileConfiguration config = plugin.getConfig();
         String menuTitlePath = "menu.gui-title";
 
