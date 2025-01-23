@@ -46,8 +46,12 @@ public class HomeTabCompleter implements TabCompleter {
                     if (player.hasPermission("sethome.import.essentials")) {
                         suggestions.add("Essentials");
                     }
+                    if (player.hasPermission("sethome.import.huskhomes")) {
+                        suggestions.add("HuskHomes");
+                    }
                     // Aquí puedes añadir más sugerencias si es necesario
                 }
+
             }
         }
         return suggestions;
