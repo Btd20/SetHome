@@ -60,6 +60,23 @@ public class HomeCommandExecutor implements CommandExecutor {
             return true;
         }
 
+        //Comando /home import HuskHomes
+        if (args.length > 1 && args[0].equalsIgnoreCase("import") && args[1].equalsIgnoreCase("HuskHomes")) {
+            if (sender instanceof Player) {
+                Player player = (Player) sender;
+                if (!player.hasPermission("sethome.import.huskhomes")) {
+                    player.sendMessage(ChatColor.RED + "You don't have permission to import homes.");
+                    return true;
+                }
+                homeImporter.importHomesFromHuskHomesForAllPlayers(player,"HuskHomes/HuskHomesData.db");
+            } else if (sender instanceof ConsoleCommandSender) {
+                homeImporter.importHomesFromHuskHomesForAllPlayers(sender,"HuskHomes/HuskHomesData.db");
+            } else {
+                sender.sendMessage(ChatColor.RED + "This command can only be executed by a player or console.");
+            }
+            return true;
+        }
+
         if (sender instanceof Player) {
             Player player = (Player) sender;
             // Lógica para abrir el menú

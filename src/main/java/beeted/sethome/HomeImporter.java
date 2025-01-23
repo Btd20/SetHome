@@ -10,10 +10,13 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
+import java.io.IOException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class HomeImporter {
+    ConsoleCommandSender console = Bukkit.getConsoleSender();
     private final SetHome plugin;
     public HomeImporter (SetHome plugin) {this.plugin = plugin;}
     public void importHomesFromEssentialsForAllPlayers(CommandSender sender) {
@@ -93,5 +96,84 @@ public class HomeImporter {
 
         sender.sendMessage(ChatColor.GREEN + "All player homes have been successfully imported from Essentials!");
         plugin.getLogger().info("All player homes have been successfully imported from Essentials!");
+    }
+
+    public void importHomesFromHuskHomesForAllPlayers(CommandSender sender, String huskHomesDbPath) {
+        File huskHomesDbFile = new File(plugin.getDataFolder().getParentFile(), huskHomesDbPath);
+        File pluginDataDir = new File(plugin.getDataFolder(), "data");
+
+        console.sendMessage(String.valueOf(pluginDataDir));
+        console.sendMessage(String.valueOf(huskHomesDbFile));
+
+        if (!huskHomesDbFile.exists()) {
+            String message = "HuskHomes database file not found: " + huskHomesDbFile.getAbsolutePath();
+            sender.sendMessage(ChatColor.RED + message);
+            plugin.getLogger().warning(message);
+            return;
+        }
+
+        sender.sendMessage(ChatColor.GREEN + "Starting to import homes from HuskHomes for all players...");
+
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + huskHomesDbFile.getAbsolutePath())) {
+            String query = "SELECT h.owner_uuid, s.name, p.x, p.y, p.z, p.yaw, p.pitch, p.world_name " +
+                    "FROM huskhomes_homes h " +
+                    "JOIN huskhomes_saved_positions s ON h.saved_position_id = s.id " +
+                    "JOIN huskhomes_position_data p ON s.position_id = p.id";
+
+            try (PreparedStatement statement = connection.prepareStatement(query);
+                 ResultSet resultSet = statement.executeQuery()) {
+
+                while (resultSet.next()) {
+                    String ownerUUID = resultSet.getString("owner_uuid");
+                    String homeName = resultSet.getString("name");
+                    double x = resultSet.getDouble("x");
+                    double y = resultSet.getDouble("y");
+                    double z = resultSet.getDouble("z");
+                    float yaw = resultSet.getFloat("yaw");
+                    float pitch = resultSet.getFloat("pitch");
+                    String worldName = resultSet.getString("world_name");
+
+                    File playerFile = new File(pluginDataDir, ownerUUID + ".yml");
+
+                    // Si el archivo no existe, crearlo
+                    if (!playerFile.exists()) {
+                        playerFile.getParentFile().mkdirs();
+                        playerFile.createNewFile();
+                    }
+
+                    FileConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+
+                    // Obtener la lista de hogares existente (si hay)
+                    List<String> homeList = playerConfig.getStringList("homes");
+                    if (homeList == null) {
+                        homeList = new ArrayList<>();
+                    }
+
+                    // Verificar si ya existe el hogar, si no agregarlo
+                    if (!homeList.contains(homeName)) {
+                        homeList.add(homeName);
+                        playerConfig.set("homes", homeList);
+
+                        // Establecer los datos de la casa
+                        String homePath = homeName;
+                        playerConfig.set(homePath + ".world", worldName);
+                        playerConfig.set(homePath + ".x", x);
+                        playerConfig.set(homePath + ".y", y);
+                        playerConfig.set(homePath + ".z", z);
+
+                        playerConfig.save(playerFile);
+                    }
+                }
+            }
+
+            sender.sendMessage(ChatColor.GREEN + "All player homes have been successfully imported from HuskHomes!");
+            plugin.getLogger().info("All player homes have been successfully imported from HuskHomes!");
+
+        } catch (Exception e) {
+            String message = "An error occurred while importing homes from HuskHomes: " + e.getMessage();
+            sender.sendMessage(ChatColor.RED + message);
+            plugin.getLogger().warning(message);
+            e.printStackTrace();
+        }
     }
 }
