@@ -17,38 +17,27 @@ public final class SetHome extends JavaPlugin {
     private HomeTabCompleter commandTabExecutor;
     @Override
     public void onEnable() {
-
+        // Cargar configuración
         registerConfig();
 
+        // Obtener el comando configurado en la configuración
         String userCommand = getConfig().getString("menu.open-command", "/home").replace("/", "");
 
-        PluginManager pm = getServer().getPluginManager();
-
-        Command command = this.getCommand(userCommand);
-
-        // Crear el ejecutor de comandos
-        commandExecutor = new HomeCommandExecutor(this);
         // Registrar el comando dinámico
+        commandExecutor = new HomeCommandExecutor(this);
         HomeCommandExecutor.registerDynamicCommand(this, userCommand);
-        getLogger().info("SetHome plugin enabled with command: /" + userCommand);
 
-        //Metrics
-        int pluginId = 	23348;
-        Metrics metrics = new Metrics(this, pluginId);
+        getLogger().info("SetHome plugin enabled with dynamic command: /" + userCommand);
 
-        // Plugin startup logic
+        // Registrar eventos
+        PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new Menu(this), this);
-        if (command instanceof PluginCommand) {
-            PluginCommand pluginCommand = (PluginCommand) command;
 
-            // Set the executor for the command
-            pluginCommand.setExecutor(new HomeCommandExecutor(this));
-
-            // Set the tab completer for the command
-            pluginCommand.setTabCompleter(new HomeTabCompleter(this));
-        }
-
+        // Métricas
+        int pluginId = 23348;
+        Metrics metrics = new Metrics(this, pluginId);
     }
+
 
     public HomeCommandExecutor getCommandExecutor() {
         return commandExecutor;

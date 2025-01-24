@@ -19,28 +19,23 @@ public class HomeTabCompleter implements TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        plugin.getLogger().info("TabComplete called for command: " + command.getName());
+
         List<String> suggestions = new ArrayList<>();
         FileConfiguration config = plugin.getConfig();
-
-        // Obtén el comando configurado en "menu.open-command"
         String configuredCommand = config.getString("menu.open-command", "/home").replace("/", "");
 
-        // Verifica si el comando registrado o el alias coincide con el comando configurado
-        if (command.getName().equalsIgnoreCase("home") || alias.equalsIgnoreCase(configuredCommand)) {
-            // Verifica si el remitente es un jugador
+        if (command.getName().equalsIgnoreCase(configuredCommand) || alias.equalsIgnoreCase(configuredCommand)) {
             if (sender instanceof Player) {
                 Player player = (Player) sender;
 
-                // Si hay al menos un argumento, proporciona sugerencias para el primer argumento
                 if (args.length == 1) {
-                    // Solo agrega la opción 'reload' si el jugador tiene el permiso adecuado
                     if (player.hasPermission("sethome.reload")) {
                         suggestions.add("reload");
                     }
                     if (player.hasPermission("sethome.import.essentials")) {
                         suggestions.add("import");
                     }
-                    // Aquí puedes añadir más sugerencias si es necesario
                 }
                 if (args.length == 2) {
                     if (player.hasPermission("sethome.import.essentials")) {
@@ -49,11 +44,12 @@ public class HomeTabCompleter implements TabCompleter {
                     if (player.hasPermission("sethome.import.huskhomes")) {
                         suggestions.add("HuskHomes");
                     }
-                    // Aquí puedes añadir más sugerencias si es necesario
                 }
-
             }
         }
+
         return suggestions;
     }
+
+
 }
