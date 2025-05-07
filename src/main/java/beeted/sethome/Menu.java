@@ -21,6 +21,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.awt.SystemColor.menu;
 
@@ -32,6 +33,11 @@ public class Menu implements Listener {
     private long cooldownTime; // Tiempo de cooldown en milisegundos
     private final Map<Player, BukkitRunnable> teleportTasks = new HashMap<>();
     private final Set<Player> teleportingPlayers = new HashSet<>();
+    private final Map<UUID, OfflinePlayer> playerTargetMap = new HashMap<>();
+    public static boolean isAdmin = false;
+
+
+    private final Map<Player, BukkitRunnable> teleportCountdownTasks = new HashMap<>();
 
 
 
@@ -47,6 +53,8 @@ public class Menu implements Listener {
 
     @EventHandler
     public void onPlayerCommandPreprocess(PlayerCommandPreprocessEvent event) {
+
+        /*Menu menu = new Menu(plugin);
         // Obtiene el jugador que ha ejecutado el comando
         Player player = event.getPlayer();
 
@@ -54,335 +62,332 @@ public class Menu implements Listener {
         FileConfiguration config = plugin.getConfig();
         String path1 = "menu.open-command";
 
+        if (!player.hasPermission("sethome.use")) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions", "&cYou don't have permission to do that.")));
+            return;
+        }
+
         // Verifica si el jugador ha ejecutado el comando configurado
         if (event.getMessage().equalsIgnoreCase(config.getString(path1))) {
-
-            // Lectura de la config
-            String path2 = "menu.gui-title";
-
-            // Crea un nuevo inventario para el menú
-            Inventory menu = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', config.getString(path2)));
-
-            // Configuración del borde
-            String borderGlassColorName = config.getString("menu.glass-pane-color", "GRAY").toUpperCase();
-            Material borderGlassMaterial = Material.matchMaterial(borderGlassColorName + "_STAINED_GLASS_PANE");
-            if (borderGlassMaterial == null) {
-                borderGlassMaterial = Material.GRAY_STAINED_GLASS_PANE; // Valor predeterminado
-            }
-            ItemStack borderGlassPane = new ItemStack(borderGlassMaterial);
-            ItemMeta borderGlassMeta = borderGlassPane.getItemMeta();
-            borderGlassMeta.setDisplayName(" ");
-            borderGlassPane.setItemMeta(borderGlassMeta);
-
-            // Rellenar bordes con cristal
-            int[] borderSlots = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26};
-            for (int slot : borderSlots) {
-                menu.setItem(slot, borderGlassPane);
-            }
-
-            // Configuración del cristal central
-            String centerGlassColorName = config.getString("menu.center-glass-color", "LIGHT_BLUE").toUpperCase();
-            Material centerGlassMaterial = Material.matchMaterial(centerGlassColorName + "_STAINED_GLASS_PANE");
-            if (centerGlassMaterial == null) {
-                centerGlassMaterial = Material.LIGHT_BLUE_STAINED_GLASS_PANE; // Valor predeterminado
-            }
-            ItemStack centerGlassPane = new ItemStack(centerGlassMaterial);
-            ItemMeta centerGlassMeta = centerGlassPane.getItemMeta();
-            centerGlassMeta.setDisplayName(" ");
-            centerGlassPane.setItemMeta(centerGlassMeta);
-
-            menu.setItem(10, centerGlassPane);
-            menu.setItem(12, centerGlassPane);
-            menu.setItem(14, centerGlassPane);
-            menu.setItem(16, centerGlassPane);
-
-            // Configuración del ítem "Set Home"
-            String setHomeMaterialName = config.getString("menu.set-home-item.material").toUpperCase();
-            Material setHomeMaterial = Material.matchMaterial(setHomeMaterialName);
-            if (setHomeMaterial == null) {
-                setHomeMaterial = Material.RED_BED; // Valor predeterminado
-            }
-
-            ItemStack setHomeItem = new ItemStack(setHomeMaterial);
-            ItemMeta setHomeMeta = setHomeItem.getItemMeta();
-
-            String setHomeDisplayName = config.getString("menu.set-home-item.display-name");
-            List<String> setHomeLore = config.getStringList("menu.set-home-item.lore");
-
-            // Configura el nombre del ítem con colores
-            setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', setHomeDisplayName));
-
-            // Configura el lore del ítem con colores usando translateAlternateColorCodes
-            for (int i = 0; i < setHomeLore.size(); i++) {
-                setHomeLore.set(i, ChatColor.translateAlternateColorCodes('&', setHomeLore.get(i)));
-            }
-            setHomeMeta.setLore(setHomeLore);
-
-            setHomeItem.setItemMeta(setHomeMeta);
-
-            menu.setItem(11, setHomeItem);
-
-            // Ítem de información (Nether Star sin lore)
-            ItemStack miObjeto = new ItemStack(Material.NETHER_STAR);
-            ItemMeta miObjetoMeta = miObjeto.getItemMeta();
-            miObjetoMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("menu.info-title")));
-            miObjeto.setItemMeta(miObjetoMeta);
-
-            menu.setItem(13, miObjeto);
-
-            // Ítem de lista de hogares
-            String homeListMaterialName = config.getString("menu.your-homes-item.material", "OAK_DOOR").toUpperCase();
-            Material homeListMaterial = Material.matchMaterial(homeListMaterialName);
-            if (homeListMaterial == null) {
-                homeListMaterial = Material.RED_WOOL; // Valor predeterminado
-            }
-
-            ItemStack homeListItem = new ItemStack(homeListMaterial);
-            ItemMeta doorItemMeta = homeListItem.getItemMeta();
-            String path6 = "menu.your-homes-item";
-            String homeListDisplayName = config.getString(path6 + ".display-name");
-            List<String> homeListLore = config.getStringList(path6 + ".lore");
-
-            doorItemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', homeListDisplayName));
-
-            for (int i = 0; i < homeListLore.size(); i++) {
-                homeListLore.set(i, ChatColor.translateAlternateColorCodes('&', homeListLore.get(i)));
-            }
-            doorItemMeta.setLore(homeListLore);
-
-            homeListItem.setItemMeta(doorItemMeta);
-
-            menu.setItem(15, homeListItem);
-
-            // Abre el menú para el jugador
-            player.openInventory(menu);
-
-            // Cancela la ejecución del comando para evitar que el servidor lo procese
-            event.setCancelled(true);
-        }
+            menu.openMainMenu(player);
+        }*/
     }
 
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        // Verifica que el clic es de un jugador
-        if (!(event.getWhoClicked() instanceof Player)) {
-            return;
-        }
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        if (!(event.getInventory().getHolder() instanceof PlayerMenuHolder)) return;
 
         Player player = (Player) event.getWhoClicked();
         FileConfiguration config = plugin.getConfig();
-
-        // Obtiene el inventario
         Inventory inventory = event.getInventory();
-        String inventoryTitle = ChatColor.translateAlternateColorCodes('&', config.getString("menu.gui-title"));
+        ItemStack clickedItem = event.getCurrentItem();
 
-        // Verifica si el inventario es el menú de hogar
-        if (event.getView().getTitle().equals(inventoryTitle)) {
-            event.setCancelled(true); // Cancela el evento para evitar que el jugador mueva los ítems
+        if (clickedItem == null || !clickedItem.hasItemMeta()) return;
 
-            // Obtiene el ítem que ha sido clicado
-            ItemStack clickedItem = event.getCurrentItem();
+        ItemMeta meta = clickedItem.getItemMeta();
+        String itemName = meta.getDisplayName();
 
-            // Verifica si el ítem no es null y tiene un ItemMeta
-            if (clickedItem != null && clickedItem.getItemMeta() != null) {
-                // Verifica si el ítem es el de establecer hogar
-                String setHomeItemName = ChatColor.translateAlternateColorCodes('&', config.getString("menu.set-home-item.display-name"));
-                if (clickedItem.getItemMeta().getDisplayName().equals(setHomeItemName)) {
-                    String currentWorld = player.getWorld().getName();
-                    List<String> blacklistedWorlds = config.getStringList("blacklisted-worlds");
+        String mainMenuTitle = ChatColor.translateAlternateColorCodes('&', config.getString("menu.gui-title"));
+        String confirmationMenuTitle = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title"));
+        String adminConfirmationTitle = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu-admin.gui-title"));
 
-                    if (blacklistedWorlds.contains(currentWorld)) {
-                        // Verifica si el jugador tiene el permiso de bypass para este mundo
-                        String bypassPermission = "sethome.world.bypass." + currentWorld;
-                        if (!player.hasPermission(bypassPermission)) {
-                            // Envía un mensaje de error si no tiene permiso para bypass
-                            String errorMessage = config.getString("messages.error-blacklisted-world");
-                            player.sendMessage(ChatColor.translateAlternateColorCodes('&', errorMessage));
-                            return; // Sale del método, no permite establecer el hogar
-                        }
+        // Clic en cabeza de jugador (menú admin)
+        if (clickedItem.getType() == Material.PLAYER_HEAD) {
+            SkullMeta skullMeta = (SkullMeta) clickedItem.getItemMeta();
+            if (skullMeta != null && skullMeta.getOwningPlayer() != null) {
+                OfflinePlayer target = skullMeta.getOwningPlayer();
+
+                // Asegúrate de que el mapa se actualice correctamente al hacer clic en la cabeza
+                playerTargetMap.put(target.getUniqueId(), target);
+
+                isAdmin = true;
+
+                // Abre el inventario del jugador objetivo con la lista de sus hogares
+                Bukkit.getScheduler().runTaskLater(plugin, () -> openPlayerHomesInventory(player, target, 0), 1);
+                player.closeInventory();
+            }
+            return;
+        }
+
+        // MENÚ PRINCIPAL
+        if (event.getView().getTitle().equals(mainMenuTitle)) {
+            event.setCancelled(true);
+
+            String setHomeItemName = ChatColor.translateAlternateColorCodes('&', config.getString("menu.set-home-item.display-name"));
+            String yourHomesItemName = ChatColor.translateAlternateColorCodes('&', config.getString("menu.your-homes-item.display-name"));
+            String adminItemName = ChatColor.translateAlternateColorCodes('&', config.getString("admin-menu.display-name"));
+
+            if (itemName.equals(adminItemName) && player.hasPermission("sethome.admin")) {
+                player.closeInventory();
+                Bukkit.getScheduler().runTaskLater(plugin, () -> openAdminMenu(player, 0), 1);
+                return;
+            }
+
+            if (itemName.equals(setHomeItemName)) {
+                String currentWorld = player.getWorld().getName();
+                List<String> blacklistedWorlds = config.getStringList("blacklisted-worlds");
+
+                if (blacklistedWorlds.contains(currentWorld)) {
+                    String bypassPermission = "sethome.world.bypass." + currentWorld;
+                    if (!player.hasPermission(bypassPermission)) {
+                        String errorMessage = config.getString("messages.error-blacklisted-world");
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', errorMessage));
+                        return;
                     }
-
-                    // Guarda el jugador que está estableciendo el hogar
-                    pendingHomeNames.put(player, "");
-
-                    // Envía un mensaje pidiendo el nombre de la casa
-                    String chatName = config.getString("messages.enter-home-name");
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', chatName));
-
-                    // Cierra el menú para evitar clics adicionales mientras se espera el nombre de la casa
-                    player.closeInventory();
                 }
 
-                // Verifica si el ítem es el de la puerta
-                String yourHomesItemName = ChatColor.translateAlternateColorCodes('&', config.getString("menu.your-homes-item.display-name"));
-                if (clickedItem.getItemMeta().getDisplayName().equals(yourHomesItemName)) {
-                    // Cierra el inventario actual
-                    player.closeInventory();
+                pendingHomeNames.put(player, "");
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.enter-home-name")));
+                player.closeInventory();
+                return;
+            }
 
-                    // Abre el inventario "Your homes" después de un breve retraso para asegurarse de que el inventario actual se haya cerrado completamente
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> openYourHomesInventory(player, config.getString("homes-menu.gui-title")), 1); // Ajusta el retraso si es necesario
-                }
+            if (itemName.equals(yourHomesItemName)) {
+                player.closeInventory();
+                Bukkit.getScheduler().runTaskLater(plugin, () -> openYourHomesInventory(player, 0), 1);
+                return;
             }
         }
 
-        // Verifica si el inventario clicado es el inventario "Your homes"
-        if (event.getView().getTitle().equals(ChatColor.translateAlternateColorCodes('&', config.getString("homes-menu.gui-title")))) {
-            event.setCancelled(true); // Cancela el evento para evitar que el jugador tome los ítems
+        // MENÚ DE HOGARES DEL JUGADOR
+        if (inventory.getHolder() instanceof PlayerMenuHolder) {
+            event.setCancelled(true);
 
-            // Obtiene el ítem que ha sido clicado
-            ItemStack clickedItem = event.getCurrentItem();
+            NamespacedKey pageKey = new NamespacedKey(plugin, "menuPage");
 
-            // Verifica si el ítem no es null y tiene un ItemMeta
-            if (clickedItem != null && clickedItem.getItemMeta() != null) {
-                String goBackItemPath = "homes-menu.go-back-item";
-                if (clickedItem.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', config.getString(goBackItemPath)))) {
-                    player.closeInventory();
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        // Lógica para abrir el menú principal nuevamente
-                        openMainMenu(player);
-                    }, 1);
+            // CAMBIO DE PÁGINA
+            if (meta.getPersistentDataContainer().has(pageKey, PersistentDataType.INTEGER)) {
+                int newPage = meta.getPersistentDataContainer().get(pageKey, PersistentDataType.INTEGER);
+                openYourHomesInventory(player, newPage);
+                return;
+            }
+
+            // BOTONES VOLVER / CERRAR
+            if (itemName.equals(ChatColor.translateAlternateColorCodes('&', config.getString("homes-menu.go-back-item")))) {
+                player.closeInventory();
+                Bukkit.getScheduler().runTaskLater(plugin, () -> openMainMenu(player), 1);
+                return;
+            }
+
+            if (itemName.equals(ChatColor.translateAlternateColorCodes('&', config.getString("homes-menu.close-item")))) {
+                player.closeInventory();
+                return;
+            }
+
+            // TELETRANSPORTE (clic izquierdo)
+            if (event.getClick() == ClickType.LEFT && clickedItem.getType() == Material.RED_BED) {
+                String homeName = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING);
+                if (homeName == null || homeName.isEmpty()) return;
+
+                if (player.hasPermission("sethome.cooldown.bypass")) {
+                    teleportPlayerToHome(player, homeName);
                     return;
                 }
 
-                String closeItemPath = "homes-menu.close-item";
-                if (clickedItem.getItemMeta().getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', config.getString(closeItemPath)))) {
-                    player.closeInventory();
+                if (teleportCooldowns.containsKey(player)) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.teleport-in-progress")));
                     return;
                 }
 
-                // Verifica si el clic es del tipo izquierdo y el ítem es una cama roja
-                if (event.getClick() == ClickType.LEFT && clickedItem.getType() == Material.RED_BED) {
-                    String homeName = clickedItem.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING);
-                    if (homeName != null) {
-                        // Verifica si el jugador tiene el permiso para omitir el cooldown
-                        if (player.hasPermission("sethome.cooldown.bypass")) {
-                            // Si tiene el permiso, teletranspórtalo inmediatamente
-                            teleportPlayerToHome(player, homeName);
-                            return;
-                        }
+                int cooldownSeconds = (int) (cooldownTime / 1000);
+                String cooldownMessage = ChatColor.translateAlternateColorCodes('&', config.getString("messages.teleport-cooldown"))
+                        .replace("%seconds%", String.valueOf(cooldownSeconds));
+                player.sendMessage(cooldownMessage);
+                teleportingPlayers.add(player);
 
-                        // Verifica si el jugador ya tiene un cooldown de teletransporte
-                        if (teleportCooldowns.containsKey(player)) {
-                            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.teleport-in-progress")));
-                            return;
-                        }
+                if (cooldownSeconds > 0) {
+                    if (config.getBoolean("titles.cooldown-title.enable")) {
+                        BukkitRunnable countdownTitle = new BukkitRunnable() {
+                            int secondsLeft = cooldownSeconds;
 
-                        // Inicia el cooldown de teletransporte
-                        String teleportCooldownMessage = ChatColor.translateAlternateColorCodes('&', config.getString("messages.teleport-cooldown"));
-                        String formattedMessage = teleportCooldownMessage.replace("%seconds%", String.valueOf(cooldownTime / 1000));
-                        player.sendMessage(formattedMessage);
-
-                        // Marca al jugador como teletransportándose
-                        teleportingPlayers.add(player);
-
-                        int cooldownSeconds = (int) (cooldownTime / 1000);
-
-                        if (cooldownSeconds > 0) {
-                            // Verifica si cooldown-title está habilitado
-                            if (config.getBoolean("titles.cooldown-title.enable")) {
-                                String teleportTitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.cooldown-title.teleport-title"));
-                                String teleportSubtitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.cooldown-title.teleport-subtitle"));
-
-                                // Envía título y subtítulo con el contador
-                                int totalSeconds = (int) (cooldownTime / 1000);
-                                for (int i = totalSeconds; i > 0; i--) {
-                                    final int secondsLeft = i;
-                                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                                        player.sendTitle(teleportTitle.replace("%seconds%", String.valueOf(secondsLeft)), teleportSubtitle.replace("%seconds%", String.valueOf(secondsLeft)), 10, 20, 10);
-                                    }, (totalSeconds - i) * 20L); // 20 ticks por segundo
-                                }
-                            } else if (config.getBoolean("titles.static-title.enable")) {
-                                String teleportTitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-title"));
-                                String teleportSubtitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-subtitle"));
-
-                                // Envía título y subtítulo estáticos
-                                int totalSeconds = (int) (cooldownTime / 1000);
-                                player.sendTitle(teleportTitle.replace("%seconds%", String.valueOf(totalSeconds)), teleportSubtitle.replace("%seconds%", String.valueOf(totalSeconds)), 10, totalSeconds * 20, 10);
-                            }
-                        }
-
-                        // Tarea para teletransportar al jugador después del cooldown
-                        BukkitRunnable teleportTask = new BukkitRunnable() {
                             @Override
                             public void run() {
-                                // Verifica si el jugador aún está en el proceso de teletransporte
-                                if (teleportingPlayers.contains(player)) {
-                                    // Realiza el teletransporte
-                                    teleportPlayerToHome(player, homeName);
+                                if (!teleportingPlayers.contains(player)) {
+                                    player.resetTitle();
+                                    this.cancel();
+                                    return;
                                 }
+
+                                String title = ChatColor.translateAlternateColorCodes('&', config.getString("titles.cooldown-title.teleport-title"));
+                                String subtitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.cooldown-title.teleport-subtitle"));
+
+                                player.sendTitle(title.replace("%seconds%", String.valueOf(secondsLeft)),
+                                        subtitle.replace("%seconds%", String.valueOf(secondsLeft)), 10, 20, 10);
+
+                                if (--secondsLeft <= 0) this.cancel();
                             }
                         };
 
-                        // Programa la tarea con el cooldown
-                        teleportTask.runTaskLater(plugin, cooldownTime / 50); // Dividido por 50 porque runTaskLater usa ticks (1 tick = 50ms)
-
-                        // Almacena la tarea programada para poder cancelarla si es necesario
-                        teleportTasks.put(player, teleportTask);
-
-                        // Cierra el inventario para que el jugador no haga clic en otros ítems durante el cooldown
-                        player.closeInventory();
+                        countdownTitle.runTaskTimer(plugin, 0L, 20L);
+                        teleportCountdownTasks.put(player, countdownTitle);
+                    } else if (config.getBoolean("titles.static-title.enable")) {
+                        player.sendTitle(
+                                ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-title")),
+                                ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-subtitle")),
+                                10, cooldownSeconds * 20, 10
+                        );
                     }
                 }
 
-                // Verifica si el clic es del tipo derecho y el ítem es una cama roja
-                if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
-                    String homeName = clickedItem.getItemMeta().getPersistentDataContainer().get(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING);
-                    if (homeName != null) {
-                        // Abre el menú de confirmación
-                        openConfirmationMenu(player, homeName);
+                BukkitRunnable teleportTask = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (teleportingPlayers.contains(player)) {
+                            teleportPlayerToHome(player, homeName);
+                        }
                     }
+                };
+
+                teleportTask.runTaskLater(plugin, cooldownTime / 50);
+                teleportTasks.put(player, teleportTask);
+                Bukkit.getScheduler().runTask(plugin, player::closeInventory);
+            }
+
+            // CONFIRMACIÓN DE ELIMINACIÓN (clic derecho)
+            if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
+                String homeName = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING);
+                if (homeName != null && !homeName.isEmpty()) {
+                    pendingHomeNames.put(player, homeName);
+                    openConfirmationMenu(player, homeName);
                 }
             }
         }
 
-        // Verifica si el inventario es el menú de confirmación
-        if (event.getView().getTitle().equals(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title")))) {
-            event.setCancelled(true); // Cancela el evento para evitar que el jugador mueva los ítems
+        // MENÚ DE CONFIRMACIÓN ADMIN
+        if (event.getView().getTitle().equals(adminConfirmationTitle) && isAdmin) {
+            event.setCancelled(true);  // Cancelar el evento para evitar otras interacciones
 
-            // Obtiene el ítem que ha sido clicado
-            ItemStack clickedItem = event.getCurrentItem();
+            // Verifica si el targetMap del admin está vacío antes de proceder
+            if (playerTargetMap.isEmpty()) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.player-not-selected")));
+                player.closeInventory();  // Cierra el inventario en caso de error
+                return;
+            }
 
-            // Verifica si el ítem no es null y tiene un ItemMeta
-            if (clickedItem != null && clickedItem.getItemMeta() != null) {
-                String itemName = clickedItem.getItemMeta().getDisplayName();
-                String confirmItemName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.confirm-item.display-name"));
-                String cancelItemName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.cancel-item.display-name"));
+            String confirmName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu-admin.confirm-item.display-name"));
+            String cancelName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu-admin.cancel-item.display-name"));
 
-                // Confirmar la eliminación del hogar
-                if (itemName.equals(confirmItemName)) {
-                    // Elimina el hogar
-                    File dataFolder = new File(plugin.getDataFolder(), "data");
-                    File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
-                    YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+            if (itemName.equals(confirmName)) {
+                OfflinePlayer target = playerTargetMap.get(player.getUniqueId());
 
-                    List<String> homes = playerConfig.getStringList("homes");
-                    homes.remove(pendingHomeNames.get(player)); // Usa el nombre del hogar pendiente
-                    playerConfig.set("homes", homes);
-                    playerConfig.set(pendingHomeNames.get(player), null); // Elimina las coordenadas del hogar
+                if (target == null) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.player-not-found")));
+                    player.closeInventory();
+                    return;
+                }
+
+                String homeName = pendingHomeNames.get(player);
+
+                if (homeName == null || homeName.isEmpty()) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")));
+                    player.closeInventory();
+                    return;
+                }
+
+                File targetFile = new File(plugin.getDataFolder(), "data/" + target.getUniqueId() + ".yml");
+                YamlConfiguration targetConfig = YamlConfiguration.loadConfiguration(targetFile);
+
+                List<String> homes = targetConfig.getStringList("homes");
+
+                if (homes.contains(homeName)) {
+                    homes.remove(homeName);
+                    targetConfig.set("homes", homes);
+                    targetConfig.set("homeData." + homeName, null);
 
                     try {
-                        playerConfig.save(playerFile);
-                        // Mensaje de confirmación
-                        String homeRemoved = config.getString("messages.home-removed");
-                        String removedMessage = ChatColor.translateAlternateColorCodes('&', homeRemoved);
-                        removedMessage = removedMessage.replace("%home%", pendingHomeNames.get(player));
-                        player.sendMessage(removedMessage);
+                        targetConfig.save(targetFile);
+                        String message = ChatColor.translateAlternateColorCodes('&', config.getString("messages.admin-home-removed"))
+                                .replace("%home%", homeName)
+                                .replace("%player%", target.getName());
+                        player.sendMessage(message);
+                        Bukkit.getScheduler().runTask(plugin, player::closeInventory);
                     } catch (IOException e) {
                         e.printStackTrace();
+                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.saving-error")));
                     }
+                } else {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")));
                     player.closeInventory();
                 }
 
-                // Cancelar la eliminación del hogar
-                if (itemName.equals(cancelItemName)) {
+                playerTargetMap.remove(player.getUniqueId());
+                pendingHomeNames.remove(player);
+            }
+            if (itemName.equals(cancelName)) {
+                playerTargetMap.remove(player.getUniqueId());  // Limpiar el mapa
+                pendingHomeNames.remove(player);  // Limpiar los hogares pendientes
+                player.closeInventory();  // Cierra el inventario si el usuario cancela
+            }
+        }
+
+        // MENÚ DE CONFIRMACIÓN (Jugador)
+        else if (event.getView().getTitle().equals(confirmationMenuTitle)) {
+            event.setCancelled(true);
+
+            // Verifica si el targetMap del jugador está vacío antes de proceder
+            if (pendingHomeNames.isEmpty()) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")));
+                player.closeInventory();
+                return;
+            }
+
+            String confirmName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.confirm-item.display-name"));
+            String cancelName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.cancel-item.display-name"));
+
+            if (itemName.equals(confirmName)) {
+                String homeName = pendingHomeNames.get(player);
+                homeName = homeName.trim();  // Elimina espacios extra al principio y al final
+                if (homeName == null || homeName.isEmpty()) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")));
                     player.closeInventory();
+                    return;
                 }
+
+                File playerFile = new File(plugin.getDataFolder(), "data/" + player.getUniqueId() + ".yml");
+                YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+
+                // Obtener la lista de hogares del jugador
+                List<String> homes = playerConfig.getStringList("homes");
+
+                // Verifica si el hogar existe en la lista
+                if (!homes.contains(homeName.toLowerCase())) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")));
+                    player.closeInventory();
+                    return;
+                }
+
+                // Eliminar el hogar de la lista de nombres
+                homes.remove(homeName);
+                playerConfig.set("homes", homes);
+
+                // Eliminar los detalles del hogar
+                playerConfig.set("homeData." + homeName, null);
+
+                try {
+                    playerConfig.save(playerFile);
+                    String message = ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-removed"))
+                            .replace("%home%", homeName);
+                    player.sendMessage(message);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    player.sendMessage(ChatColor.RED + "Error al guardar los cambios.");
+                }
+
+                pendingHomeNames.remove(player);
+                player.closeInventory();
+            }
+
+            if (itemName.equals(cancelName)) {
+                pendingHomeNames.remove(player);
+                player.closeInventory();
             }
         }
     }
 
-    // Método para teletransportar al jugador al hogar
+
+        // Método para teletransportar al jugador al hogar
     private void teleportPlayerToHome(Player player, String homeName) {
         File dataFolder = new File(plugin.getDataFolder(), "data");
         File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
@@ -395,8 +400,10 @@ public class Menu implements Listener {
             double x = playerConfig.getDouble(homeName + ".x");
             double y = playerConfig.getDouble(homeName + ".y");
             double z = playerConfig.getDouble(homeName + ".z");
+            float yaw = (float) playerConfig.getDouble(homeName + ".yaw");
+            float pitch = (float) playerConfig.getDouble(homeName + ".pitch");
 
-            Location homeLocation = new Location(world, x, y, z);
+            Location homeLocation = new Location(world, x, y, z, yaw, pitch);
             player.teleport(homeLocation);
 
             // Mensaje de confirmación
@@ -417,7 +424,7 @@ public class Menu implements Listener {
 
     private void openConfirmationMenu(Player player, String homeName) {
         FileConfiguration config = plugin.getConfig();
-        Inventory confirmationMenu = Bukkit.createInventory(null, 9, ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title")));
+        Inventory confirmationMenu = Bukkit.createInventory(new PlayerMenuHolder(), 9, ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title")));
 
         // Crear ítem de confirmación
         ItemStack confirmItem = new ItemStack(Material.GREEN_WOOL); // Usar el material que desees
@@ -470,6 +477,7 @@ public class Menu implements Listener {
                 if (teleportTask != null) {
                     teleportTask.cancel();
                     teleportTasks.remove(player);
+                    player.sendTitle("", "", 0, 0, 0);
                 }
 
                 // Obtiene el mensaje de cancelación de la configuración
@@ -491,32 +499,26 @@ public class Menu implements Listener {
         FileConfiguration config = plugin.getConfig();
         String menuTitlePath = "menu.gui-title";
 
-        // Crea un nuevo inventario para el menú principal
-        Inventory menu = Bukkit.createInventory(null, 27, ChatColor.translateAlternateColorCodes('&', config.getString(menuTitlePath)));
+        Inventory menu = Bukkit.createInventory(new PlayerMenuHolder(), 27, ChatColor.translateAlternateColorCodes('&', config.getString(menuTitlePath)));
 
-        // Configuración del borde
+        // Bordes
         String borderGlassColorName = config.getString("menu.glass-pane-color", "GRAY").toUpperCase();
         Material borderGlassMaterial = Material.matchMaterial(borderGlassColorName + "_STAINED_GLASS_PANE");
-        if (borderGlassMaterial == null) {
-            borderGlassMaterial = Material.GRAY_STAINED_GLASS_PANE; // Valor predeterminado
-        }
+        if (borderGlassMaterial == null) borderGlassMaterial = Material.GRAY_STAINED_GLASS_PANE;
         ItemStack borderGlassPane = new ItemStack(borderGlassMaterial);
         ItemMeta borderGlassMeta = borderGlassPane.getItemMeta();
         borderGlassMeta.setDisplayName(" ");
         borderGlassPane.setItemMeta(borderGlassMeta);
 
-        // Rellenar bordes con cristal
         int[] borderSlots = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26};
         for (int slot : borderSlots) {
             menu.setItem(slot, borderGlassPane);
         }
 
-        // Configuración del cristal central
+        // Vidrio central
         String centerGlassColorName = config.getString("menu.center-glass-color", "LIGHT_BLUE").toUpperCase();
         Material centerGlassMaterial = Material.matchMaterial(centerGlassColorName + "_STAINED_GLASS_PANE");
-        if (centerGlassMaterial == null) {
-            centerGlassMaterial = Material.LIGHT_BLUE_STAINED_GLASS_PANE; // Valor predeterminado
-        }
+        if (centerGlassMaterial == null) centerGlassMaterial = Material.LIGHT_BLUE_STAINED_GLASS_PANE;
         ItemStack centerGlassPane = new ItemStack(centerGlassMaterial);
         ItemMeta centerGlassMeta = centerGlassPane.getItemMeta();
         centerGlassMeta.setDisplayName(" ");
@@ -527,137 +529,89 @@ public class Menu implements Listener {
         menu.setItem(14, centerGlassPane);
         menu.setItem(16, centerGlassPane);
 
-        // Configuración del ítem "Set Home"
+        // Set Home
         String setHomeMaterialName = config.getString("menu.set-home-item.material").toUpperCase();
         Material setHomeMaterial = Material.matchMaterial(setHomeMaterialName);
-        if (setHomeMaterial == null) {
-            setHomeMaterial = Material.RED_BED; // Valor predeterminado
-        }
-
+        if (setHomeMaterial == null) setHomeMaterial = Material.RED_BED;
         ItemStack setHomeItem = new ItemStack(setHomeMaterial);
         ItemMeta setHomeMeta = setHomeItem.getItemMeta();
-
-        String setHomeDisplayName = config.getString("menu.set-home-item.display-name");
+        setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("menu.set-home-item.display-name")));
         List<String> setHomeLore = config.getStringList("menu.set-home-item.lore");
-
-        // Configura el nombre del ítem con colores
-        setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', setHomeDisplayName));
-
-        // Configura el lore del ítem con colores usando translateAlternateColorCodes
         for (int i = 0; i < setHomeLore.size(); i++) {
             setHomeLore.set(i, ChatColor.translateAlternateColorCodes('&', setHomeLore.get(i)));
         }
         setHomeMeta.setLore(setHomeLore);
-
         setHomeItem.setItemMeta(setHomeMeta);
-
         menu.setItem(11, setHomeItem);
 
-        // Ítem de información (Nether Star sin lore)
-        ItemStack miObjeto = new ItemStack(Material.NETHER_STAR);
-        ItemMeta miObjetoMeta = miObjeto.getItemMeta();
-        miObjetoMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("menu.info-title")));
-        miObjeto.setItemMeta(miObjetoMeta);
-
-        menu.setItem(13, miObjeto);
-
-        // Ítem de lista de hogares
-        String homeListMaterialName = config.getString("menu.your-homes-item.material", "OAK_DOOR").toUpperCase();
+        // Your Homes
+        String homeListMaterialName = config.getString("menu.your-homes-item.material").toUpperCase();
         Material homeListMaterial = Material.matchMaterial(homeListMaterialName);
-        if (homeListMaterial == null) {
-            homeListMaterial = Material.RED_WOOL; // Valor predeterminado
-        }
-
+        if (homeListMaterial == null) homeListMaterial = Material.OAK_DOOR;
         ItemStack homeListItem = new ItemStack(homeListMaterial);
-        ItemMeta doorItemMeta = homeListItem.getItemMeta();
-        String path6 = "menu.your-homes-item";
-        String homeListDisplayName = config.getString(path6 + ".display-name");
-        List<String> homeListLore = config.getStringList(path6 + ".lore");
-
-        doorItemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', homeListDisplayName));
-
+        ItemMeta homeListMeta = homeListItem.getItemMeta();
+        homeListMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("menu.your-homes-item.display-name")));
+        List<String> homeListLore = config.getStringList("menu.your-homes-item.lore");
         for (int i = 0; i < homeListLore.size(); i++) {
             homeListLore.set(i, ChatColor.translateAlternateColorCodes('&', homeListLore.get(i)));
         }
-        doorItemMeta.setLore(homeListLore);
-
-        homeListItem.setItemMeta(doorItemMeta);
-
+        homeListMeta.setLore(homeListLore);
+        homeListItem.setItemMeta(homeListMeta);
         menu.setItem(15, homeListItem);
 
-        // Abre el menú para el jugador
+        // Admin Menu o Info
+        if (player.hasPermission("sethome.admin")) {
+            String adminMaterialName = config.getString("admin-menu.material").toUpperCase();
+            Material adminMaterial = Material.matchMaterial(adminMaterialName);
+            if (adminMaterial == null) adminMaterial = Material.BOOK;
+            ItemStack adminItem = new ItemStack(adminMaterial);
+            ItemMeta adminMeta = adminItem.getItemMeta();
+            adminMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("admin-menu.display-name")));
+            List<String> adminMenuLore = config.getStringList("admin-menu.lore");
+            for (int i = 0; i < adminMenuLore.size(); i++) {
+                adminMenuLore.set(i, ChatColor.translateAlternateColorCodes('&', adminMenuLore.get(i)));
+            }
+            adminMeta.setLore(adminMenuLore);
+            adminItem.setItemMeta(adminMeta);
+            menu.setItem(13, adminItem);
+        } else {
+            ItemStack infoItem = new ItemStack(Material.NETHER_STAR);
+            ItemMeta infoMeta = infoItem.getItemMeta();
+            infoMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("menu.info-title")));
+            infoItem.setItemMeta(infoMeta);
+            menu.setItem(13, infoItem);
+        }
+
         player.openInventory(menu);
     }
 
-    private void openYourHomesInventory(Player player, String path) {
-        player.closeInventory(); // Cierra cualquier inventario abierto antes de abrir uno nuevo
 
-        // Crea un nuevo inventario para "Your homes"
+    private void openYourHomesInventory(Player player, int page) {
+        player.closeInventory();
+
         FileConfiguration config = plugin.getConfig();
-        Inventory homesMenu = Bukkit.createInventory(null, 54, ChatColor.translateAlternateColorCodes('&', path));
+        int size = config.getInt("homes-menu.size");
 
-        // Carga las ubicaciones de los hogares del archivo YAML del jugador
         File dataFolder = new File(plugin.getDataFolder(), "data");
         File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
         YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
 
-        // Obtén la lista de hogares del jugador
         List<String> homes = playerConfig.getStringList("homes");
 
-        // Si hay hogares, agrega ítems de hogar
-        if (!homes.isEmpty()) {
-            int position = 0;
+        int itemsPerPage = size - 9; // Excluyendo la última fila
+        int totalPages = (int) Math.ceil((double) homes.size() / itemsPerPage);
+        if (totalPages == 0) totalPages = 1; // Asegurar al menos una página
 
-            // Itera sobre cada hogar y agrega una cama al inventario por cada uno
-            for (String home : homes) {
-                // Verifica si el hogar tiene coordenadas almacenadas
-                if (playerConfig.contains(home)) {
-                    String world = playerConfig.getString(home + ".world");
-                    double x = playerConfig.getDouble(home + ".x");
-                    double y = playerConfig.getDouble(home + ".y");
-                    double z = playerConfig.getDouble(home + ".z");
+        // Reemplazar %page% y %maxpages% en el título
+        String rawTitle = ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("homes-menu.gui-title"))
+                .replace("%page%", String.valueOf(page + 1)) // página empieza en 0
+                .replace("%maxpages%", String.valueOf(totalPages));
 
-                    // Verifica que el mundo no sea null antes de procesarlo
-                    if (world != null) {
-                        // Crea un nuevo ítem de cama
-                        ItemStack bedItem = new ItemStack(Material.RED_BED);
-                        ItemMeta bedMeta = bedItem.getItemMeta();
+        Inventory homesMenu = Bukkit.createInventory(new PlayerMenuHolder(), config.getInt("homes-menu.size"), rawTitle);
 
-                        // Configura el nombre del hogar con colores
-                        String homeNamePath = config.getString("homes-menu.home-item.display-name");
-                        if (homeNamePath != null) {
-                            String homeNameItem = ChatColor.translateAlternateColorCodes('&', homeNamePath);
-                            homeNameItem = homeNameItem.replace("%home%", home);
-                            bedMeta.setDisplayName(homeNameItem);
-                        }
 
-                        // Asigna un identificador único al ítem (el nombre del hogar)
-                        bedMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING, home);
-
-                        // Configura el lore del hogar con las coordenadas y colores
-                        List<String> lore = config.getStringList("homes-menu.home-item.lore");
-                        if (lore != null) {
-                            for (int i = 0; i < lore.size(); i++) {
-                                lore.set(i, ChatColor.translateAlternateColorCodes('&', lore.get(i)
-                                        .replace("%home%", home)
-                                        .replace("%world%", world)
-                                        .replace("%x%", String.valueOf(x))
-                                        .replace("%y%", String.valueOf(y))
-                                        .replace("%z%", String.valueOf(z))));
-                            }
-                            bedMeta.setLore(lore);
-                        }
-
-                        bedItem.setItemMeta(bedMeta);
-
-                        // Agrega la cama al inventario
-                        homesMenu.addItem(bedItem);
-                        position++;
-                    }
-                }
-            }
-        } else {
-            // Si no hay hogares, agregar un ítem informativo
+        if (homes.isEmpty()) {
+            // Ítem informativo si no hay hogares
             ItemStack noHomesItem = new ItemStack(Material.PAPER);
             ItemMeta noHomesMeta = noHomesItem.getItemMeta();
 
@@ -668,141 +622,182 @@ public class Menu implements Listener {
                 if (noHomesDisplayName != null) {
                     noHomesMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', noHomesDisplayName));
                 }
-
                 if (noHomesLore != null) {
                     noHomesLore.replaceAll(line -> ChatColor.translateAlternateColorCodes('&', line));
                     noHomesMeta.setLore(noHomesLore);
                 }
-
                 noHomesItem.setItemMeta(noHomesMeta);
             }
 
-            homesMenu.setItem(22, noHomesItem); // Centra el ítem en el medio del menú
+            homesMenu.setItem(22, noHomesItem);
+        } else {
+            int start = page * itemsPerPage;
+            int end = Math.min(start + itemsPerPage, homes.size());
+
+            for (int i = start; i < end; i++) {
+                String home = homes.get(i);
+                if (!playerConfig.contains(home)) continue;
+
+                String world = playerConfig.getString(home + ".world");
+                double x = playerConfig.getDouble(home + ".x");
+                double y = playerConfig.getDouble(home + ".y");
+                double z = playerConfig.getDouble(home + ".z");
+
+                if (world == null) continue;
+
+                ItemStack bedItem = new ItemStack(Material.RED_BED);
+                ItemMeta bedMeta = bedItem.getItemMeta();
+
+                String homeNamePath = config.getString("homes-menu.home-item.display-name");
+                if (homeNamePath != null) {
+                    String homeNameItem = ChatColor.translateAlternateColorCodes('&', homeNamePath).replace("%home%", home);
+                    bedMeta.setDisplayName(homeNameItem);
+                }
+
+                bedMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "homePosition"), PersistentDataType.STRING, home);
+
+                List<String> lore = config.getStringList("homes-menu.home-item.lore");
+                if (lore != null) {
+                    for (int j = 0; j < lore.size(); j++) {
+                        lore.set(j, ChatColor.translateAlternateColorCodes('&', lore.get(j)
+                                .replace("%home%", home)
+                                .replace("%world%", world)
+                                .replace("%x%", String.valueOf(x))
+                                .replace("%y%", String.valueOf(y))
+                                .replace("%z%", String.valueOf(z))));
+                    }
+                    bedMeta.setLore(lore);
+                }
+
+                bedItem.setItemMeta(bedMeta);
+                homesMenu.addItem(bedItem);
+            }
         }
 
-        // Agrega una línea de paneles de cristal negro en la cuarta fila
-        for (int i = 45; i < 54; i++) {
+        // Línea inferior (última fila)
+        for (int i = size - 9; i < size; i++) {
             ItemStack glassPane = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
             ItemMeta meta = glassPane.getItemMeta();
-
             if (meta != null) {
                 meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', "&f"));
                 glassPane.setItemMeta(meta);
             }
-
             homesMenu.setItem(i, glassPane);
         }
 
-        // Botones de navegación
+        // Botón volver
         ItemStack goBack = new ItemStack(Material.ARROW);
-        ItemStack close = new ItemStack(Material.BARRIER);
         ItemMeta goBackMeta = goBack.getItemMeta();
-        ItemMeta closeMeta = close.getItemMeta();
-
         if (goBackMeta != null) {
             String goBackPath = config.getString("homes-menu.go-back-item");
-            if (goBackPath != null) {
-                goBackMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', goBackPath));
-                goBack.setItemMeta(goBackMeta);
-            }
+            goBackMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', goBackPath));
+            goBack.setItemMeta(goBackMeta);
         }
+        homesMenu.setItem(size - 9 + 3, goBack);
 
+        // Botón cerrar
+        ItemStack close = new ItemStack(Material.BARRIER);
+        ItemMeta closeMeta = close.getItemMeta();
         if (closeMeta != null) {
             String closePath = config.getString("homes-menu.close-item");
-            if (closePath != null) {
-                closeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', closePath));
-                close.setItemMeta(closeMeta);
+            closeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', closePath));
+            close.setItemMeta(closeMeta);
+        }
+        homesMenu.setItem(size - 9 + 4, close);
+
+        // Botón página anterior
+        if (page > 0) {
+            ItemStack previousPage = new ItemStack(Material.PAPER);
+            ItemMeta meta = previousPage.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("homes-menu.previous-page-item")));
+                meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "menuPage"), PersistentDataType.INTEGER, page - 1);
+                previousPage.setItemMeta(meta);
             }
+            homesMenu.setItem(size - 9 + 1, previousPage);
         }
 
-        homesMenu.setItem(48, goBack);
-        homesMenu.setItem(50, close);
+        // Botón página siguiente
+        if (page < totalPages - 1) {
+            ItemStack nextPage = new ItemStack(Material.PAPER);
+            ItemMeta meta = nextPage.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("homes-menu.next-page-item")));
+                meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "menuPage"), PersistentDataType.INTEGER, page + 1);
+                nextPage.setItemMeta(meta);
+            }
+            homesMenu.setItem(size - 9 + 7, nextPage);
+        }
 
-        // Abre el inventario "Your homes" para el jugador
         player.openInventory(homesMenu);
     }
+
 
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         FileConfiguration config = plugin.getConfig();
 
-        // Verifica si el jugador está esperando para establecer el nombre de la casa
-        if (pendingHomeNames.containsKey(player)) {
-            // Obtiene el mensaje de chat del jugador
-            String message = event.getMessage();
+        if (!pendingHomeNames.containsKey(player)) return;
 
-            // Verifica si el jugador ha escrito "cancel"
-            if (message.equalsIgnoreCase("cancel")) {
-                // Cancela la entrada del nombre del hogar y notifica al jugador
-                pendingHomeNames.remove(player);
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-cancelled")));
-                event.setCancelled(true);
-                return;
-            }
+        String message = event.getMessage();
 
-            // Obtiene el nombre de la casa del mensaje de chat
-            String homeName = message;
-
-            // Verifica si el hogar ya existe
-            File dataFolder = new File(plugin.getDataFolder(), "data");
-            File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
-            YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
-
-            if (playerConfig.contains(homeName)) {
-                // El hogar ya existe, notifica al jugador y cancela el evento
-                String homeExists = config.getString("messages.home-exists");
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', homeExists));
-                event.setCancelled(true);
-                return;
-            }
-
-            // Obtén el límite de hogares desde los permisos del jugador
-            int maxHomes = getMaxHomesForPlayer(player);
-
-            // Verifica cuántos hogares tiene el jugador
-            List<String> homes = playerConfig.getStringList("homes");
-            if (homes.size() >= maxHomes) {
-                // El jugador ha alcanzado el límite de hogares, notifica al jugador
-                String homeLimitReached = config.getString("messages.home-limit-reached");
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', homeLimitReached.replace("%limit%", String.valueOf(maxHomes))));
-                event.setCancelled(true);
-                return;
-            }
-
-            // Guarda el nombre de la casa en el mapa
-            pendingHomeNames.put(player, homeName);
-
-            // Cancela el evento para evitar que el mensaje de chat aparezca en el chat global
+        if (message.equalsIgnoreCase("cancel")) {
+            pendingHomeNames.remove(player);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-cancelled")));
             event.setCancelled(true);
-
-            // Agrega el nuevo hogar a la lista de hogares del jugador
-            homes.add(homeName);
-            playerConfig.set("homes", homes);
-
-            // Obtiene la ubicación del jugador y el nombre del mundo
-            Location loc = player.getLocation();
-            String worldName = loc.getWorld().getName();
-
-            // Actualiza el archivo YAML del jugador con las nuevas coordenadas del hogar y el mundo
-            playerConfig.set(homeName + ".world", worldName);
-            playerConfig.set(homeName + ".x", loc.getBlockX());
-            playerConfig.set(homeName + ".y", loc.getBlockY());
-            playerConfig.set(homeName + ".z", loc.getBlockZ());
-
-            try {
-                playerConfig.save(playerFile);
-
-                // Envía un mensaje al jugador confirmando que se ha establecido su hogar
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-established")));
-            } catch (IOException e) {
-                // Maneja cualquier excepción
-                e.printStackTrace();
-            }
-
-            // Limpia el nombre de la casa en el mapa después de un breve retraso
-            Bukkit.getScheduler().runTaskLater(plugin, () -> pendingHomeNames.remove(player), 20);
+            return;
         }
+
+        String homeName = message;
+
+        File dataFolder = new File(plugin.getDataFolder(), "data");
+        File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
+        YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+
+        if (playerConfig.contains(homeName)) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-exists")));
+            event.setCancelled(true);
+            return;
+        }
+
+        int maxHomes = getMaxHomesForPlayer(player);
+        List<String> homes = playerConfig.getStringList("homes");
+
+        if (homes.size() >= maxHomes) {
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&',
+                    config.getString("messages.home-limit-reached").replace("%limit%", String.valueOf(maxHomes))));
+
+            pendingHomeNames.remove(player);
+
+            event.setCancelled(true);
+            return;
+        }
+
+        Location loc = player.getLocation();
+        String worldName = loc.getWorld().getName();
+
+        homes.add(homeName);
+        playerConfig.set("homes", homes);
+        playerConfig.set(homeName + ".world", worldName);
+        playerConfig.set(homeName + ".x", loc.getX());
+        playerConfig.set(homeName + ".y", loc.getY());
+        playerConfig.set(homeName + ".z", loc.getZ());
+        playerConfig.set(homeName + ".yaw", loc.getYaw());
+        playerConfig.set(homeName + ".pitch", loc.getPitch());
+
+        try {
+            playerConfig.save(playerFile);
+            player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-established")));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // Eliminar del mapa inmediatamente
+        pendingHomeNames.remove(player);
+
+        // ✅ Cancelamos el evento para que el mensaje no se muestre en el chat global
+        event.setCancelled(true);
     }
 
     private int getMaxHomesForPlayer(Player player) {
@@ -835,6 +830,383 @@ public class Menu implements Listener {
         }
 
         return maxHomes;
+    }
+
+    public void openAdminMenu(Player player, int page) {
+        player.closeInventory();
+
+        FileConfiguration config = plugin.getConfig();
+        int size = config.getInt("admin-menu.size", 54); // Asegúrate que sea múltiplo de 9 y al menos 18
+
+        // Obtener lista de jugadores
+        List<OfflinePlayer> players = Arrays.asList(Bukkit.getOfflinePlayers());
+        players.sort(Comparator.comparing(OfflinePlayer::getName, String.CASE_INSENSITIVE_ORDER));
+
+        int itemsPerPage = size - 9;
+        int totalPages = (int) Math.ceil((double) players.size() / itemsPerPage);
+        if (totalPages == 0) totalPages = 1;
+
+        String title = ChatColor.translateAlternateColorCodes('&',
+                config.getString("admin-menu.gui-title", "&8Admin Menu - Page %page%/%maxpages%")
+        ).replace("%page%", String.valueOf(page + 1)).replace("%maxpages%", String.valueOf(totalPages));
+
+        Inventory menu = Bukkit.createInventory(new PlayerMenuHolder(), size, title);
+
+        int start = page * itemsPerPage;
+        int end = Math.min(start + itemsPerPage, players.size());
+
+        for (int i = start; i < end; i++) {
+            OfflinePlayer target = players.get(i);
+            ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
+            SkullMeta meta = (SkullMeta) skull.getItemMeta();
+
+            if (meta != null) {
+                meta.setOwningPlayer(target);
+                meta.setDisplayName(ChatColor.YELLOW + target.getName());
+
+                List<String> lore = config.getStringList("admin-menu.player-head-lore");
+                lore.replaceAll(line -> ChatColor.translateAlternateColorCodes('&',
+                        line.replace("%player%", target.getName())
+                ));
+                meta.setLore(lore);
+
+                meta.getPersistentDataContainer().set(
+                        new NamespacedKey(plugin, "adminTarget"),
+                        PersistentDataType.STRING,
+                        target.getUniqueId().toString()
+                );
+                skull.setItemMeta(meta);
+            }
+
+            menu.addItem(skull);
+        }
+
+        // Última fila - fondo
+        for (int i = size - 9; i < size; i++) {
+            ItemStack glass = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+            ItemMeta meta = glass.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(" ");
+                glass.setItemMeta(meta);
+            }
+            menu.setItem(i, glass);
+        }
+
+        // Botón volver
+        ItemStack goBack = new ItemStack(Material.ARROW);
+        ItemMeta goBackMeta = goBack.getItemMeta();
+        if (goBackMeta != null) {
+            String goBackPath = config.getString("admin-menu.go-back-item");
+            goBackMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', goBackPath));
+            goBack.setItemMeta(goBackMeta);
+        }
+        menu.setItem(size - 9 + 3, goBack);
+
+        // Botón cerrar
+        ItemStack close = new ItemStack(Material.BARRIER);
+        ItemMeta closeMeta = close.getItemMeta();
+        if (closeMeta != null) {
+            String closePath = config.getString("homes-menu.close-item");
+            closeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', closePath));
+            close.setItemMeta(closeMeta);
+        }
+        menu.setItem(size - 9 + 4, close);
+
+        // Página anterior
+        if (page > 0) {
+            ItemStack prev = new ItemStack(Material.PAPER);
+            ItemMeta prevMeta = prev.getItemMeta();
+            prevMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("admin-menu.previous-page-item", "&7Página anterior")));
+            prevMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "adminPage"), PersistentDataType.INTEGER, page - 1);
+            prev.setItemMeta(prevMeta);
+            menu.setItem(size - 9 + 1, prev);
+        }
+
+        // Página siguiente
+        if (page < totalPages - 1) {
+            ItemStack next = new ItemStack(Material.PAPER);
+            ItemMeta nextMeta = next.getItemMeta();
+            nextMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("admin-menu.next-page-item", "&7Página siguiente")));
+            nextMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "adminPage"), PersistentDataType.INTEGER, page + 1);
+            next.setItemMeta(nextMeta);
+            menu.setItem(size - 9 + 7, next);
+        }
+
+        player.openInventory(menu);
+    }
+
+    public void openPlayerHomesInventory(Player admin, OfflinePlayer target, int page) {
+        admin.closeInventory();
+
+        FileConfiguration config = plugin.getConfig();
+        int size = config.getInt("homes-menu.size");
+
+        File dataFolder = new File(plugin.getDataFolder(), "data");
+        File playerFile = new File(dataFolder, target.getUniqueId() + ".yml");
+        YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+
+        List<String> homes = playerConfig.getStringList("homes");
+
+        int itemsPerPage = size - 9; // Excluyendo la última fila
+        int totalPages = (int) Math.ceil((double) homes.size() / itemsPerPage);
+        if (totalPages == 0) totalPages = 1; // Asegurar al menos una página
+
+        // Título con paginación
+        String rawTitle = ChatColor.translateAlternateColorCodes('&',
+                        config.getString("admin-menu.admin-gui-title"))
+                .replace("%page%", String.valueOf(page + 1))
+                .replace("%maxpages%", String.valueOf(totalPages))
+                .replace("%player%", String.valueOf(target.getName()));
+
+        Inventory homesMenu = Bukkit.createInventory(new PlayerMenuHolder(), size, rawTitle);
+
+        if (homes.isEmpty()) {
+            // Ítem informativo si no hay hogares
+            ItemStack noHomesItem = new ItemStack(Material.PAPER);
+            ItemMeta noHomesMeta = noHomesItem.getItemMeta();
+            if (noHomesMeta != null) {
+                String displayName = config.getString("homes-menu.no-homes-item.display-name");
+                List<String> lore = config.getStringList("homes-menu.no-homes-item.lore");
+                noHomesMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', displayName));
+                lore.replaceAll(line -> ChatColor.translateAlternateColorCodes('&', line));
+                noHomesMeta.setLore(lore);
+                noHomesItem.setItemMeta(noHomesMeta);
+            }
+            homesMenu.setItem(22, noHomesItem);
+        } else {
+            int start = page * itemsPerPage;
+            int end = Math.min(start + itemsPerPage, homes.size());
+
+            for (int i = start; i < end; i++) {
+                String home = homes.get(i);
+                if (!playerConfig.contains(home)) continue;
+
+                String world = playerConfig.getString(home + ".world");
+                double x = playerConfig.getDouble(home + ".x");
+                double y = playerConfig.getDouble(home + ".y");
+                double z = playerConfig.getDouble(home + ".z");
+                if (world == null) continue;
+
+                ItemStack bedItem = new ItemStack(Material.RED_BED);
+                ItemMeta bedMeta = bedItem.getItemMeta();
+
+                String homeNamePath = config.getString("homes-menu.home-item.display-name");
+                bedMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', homeNamePath).replace("%home%", home));
+
+                bedMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "adminHomeName"), PersistentDataType.STRING, home);
+                bedMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING, target.getUniqueId().toString());
+
+                List<String> lore = config.getStringList("homes-menu.home-item.lore");
+                for (int j = 0; j < lore.size(); j++) {
+                    lore.set(j, ChatColor.translateAlternateColorCodes('&', lore.get(j)
+                            .replace("%home%", home)
+                            .replace("%world%", world)
+                            .replace("%x%", String.valueOf(x))
+                            .replace("%y%", String.valueOf(y))
+                            .replace("%z%", String.valueOf(z))));
+                }
+                bedMeta.setLore(lore);
+
+                bedItem.setItemMeta(bedMeta);
+                homesMenu.addItem(bedItem);
+            }
+        }
+
+        // Decoración de la última fila (pantalla inferior)
+        for (int i = size - 9; i < size; i++) {
+            ItemStack pane = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
+            ItemMeta meta = pane.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName(" ");
+                pane.setItemMeta(meta);
+            }
+            homesMenu.setItem(i, pane);
+        }
+
+        // Botón volver
+        ItemStack back = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = back.getItemMeta();
+        if (backMeta != null) {
+            String backPath = config.getString("homes-menu.go-back-item");
+            backMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', backPath));
+            back.setItemMeta(backMeta);
+        }
+        homesMenu.setItem(size - 9 + 3, back);
+
+        // Botón cerrar
+        ItemStack close = new ItemStack(Material.BARRIER);
+        ItemMeta closeMeta = close.getItemMeta();
+        if (closeMeta != null) {
+            String closePath = config.getString("homes-menu.close-item");
+            closeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', closePath));
+            close.setItemMeta(closeMeta);
+        }
+        homesMenu.setItem(size - 9 + 4, close);
+
+        // Botón página anterior
+        if (page > 0) {
+            ItemStack prev = new ItemStack(Material.PAPER);
+            ItemMeta meta = prev.getItemMeta();
+            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("homes-menu.previous-page-item")));
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "adminHomesPage"), PersistentDataType.INTEGER, page - 1);
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING, target.getUniqueId().toString());
+            prev.setItemMeta(meta);
+            homesMenu.setItem(size - 9 + 1, prev);
+        }
+
+        // Botón página siguiente
+        if (page < totalPages - 1) {
+            ItemStack next = new ItemStack(Material.PAPER);
+            ItemMeta meta = next.getItemMeta();
+            meta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("homes-menu.next-page-item")));
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "adminHomesPage"), PersistentDataType.INTEGER, page + 1);
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING, target.getUniqueId().toString());
+            next.setItemMeta(meta);
+            homesMenu.setItem(size - 9 + 7, next);
+        }
+
+        admin.openInventory(homesMenu);
+    }
+
+    @EventHandler
+    public void onAdminInventoryClick(InventoryClickEvent event) {
+        if (event.getInventory().getHolder() instanceof PlayerMenuHolder) {
+            event.setCancelled(true);
+            Player admin = (Player) event.getWhoClicked();
+            ItemStack clickedItem = event.getCurrentItem();
+
+            if (clickedItem == null || !clickedItem.hasItemMeta()) return;
+
+            ItemMeta meta = clickedItem.getItemMeta();
+            NamespacedKey pageKey = new NamespacedKey(plugin, "adminHomesPage");
+
+            // Cambio de página
+            if (meta.getPersistentDataContainer().has(pageKey, PersistentDataType.INTEGER)) {
+                int newPage = meta.getPersistentDataContainer().get(pageKey, PersistentDataType.INTEGER);
+                String targetUUID = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING);
+                OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(targetUUID));
+                openPlayerHomesInventory(admin, target, newPage);
+                return;
+            }
+
+            // Botones volver/cerrar
+            if (meta.getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("homes-menu.go-back-item")))) {
+                admin.closeInventory();
+                Bukkit.getScheduler().runTaskLater(plugin, () -> openMainMenu(admin), 1);
+                return;
+            }
+
+            if (meta.getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("homes-menu.close-item")))) {
+                admin.closeInventory();
+                return;
+            }
+
+            // Teletransportación (clic izquierdo)
+            if (event.getClick() == ClickType.LEFT && clickedItem.getType() == Material.RED_BED && isAdmin) {
+                String homeName = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeName"), PersistentDataType.STRING);
+                if (homeName == null) return;
+
+                String targetUUID = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING);
+                OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(targetUUID));
+
+                teleportPlayerToHome(admin, target, homeName);
+                return;
+            }
+
+            // Eliminar hogar (clic derecho)
+            if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
+                String homeName = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeName"), PersistentDataType.STRING);
+                String targetUUID = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING);
+                OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(targetUUID));
+
+                if (homeName != null) {
+                    openAdminConfirmationMenu(admin, target, homeName);
+                }
+            }
+        }
+    }
+
+    public void teleportPlayerToHome(Player admin, OfflinePlayer target, String homeName) {
+        File dataFolder = new File(plugin.getDataFolder(), "data");
+        File playerFile = new File(dataFolder, target.getUniqueId() + ".yml");
+        YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+
+        if (!playerConfig.contains(homeName)) {
+            String msg = plugin.getConfig().getString("messages.player-home-not-exist");
+            if (msg != null) {
+                msg = ChatColor.translateAlternateColorCodes('&', msg)
+                        .replace("%home%", homeName)
+                        .replace("%player%", target.getName());
+                admin.sendMessage(msg);
+            }
+            return;
+        }
+
+
+        String world = playerConfig.getString(homeName + ".world");
+        double x = playerConfig.getDouble(homeName + ".x");
+        double y = playerConfig.getDouble(homeName + ".y");
+        double z = playerConfig.getDouble(homeName + ".z");
+
+        if (world == null) {
+            admin.sendMessage(ChatColor.translateAlternateColorCodes('&', playerConfig.getString("messages.invalid-location")));
+            return;
+        }
+
+        World targetWorld = Bukkit.getServer().getWorld(world);
+        if (targetWorld == null) {
+            admin.sendMessage(ChatColor.translateAlternateColorCodes('&', playerConfig.getString("messages.world-not-exist")));
+            return;
+        }
+
+        Location homeLocation = new Location(targetWorld, x, y, z);
+        admin.teleport(homeLocation);
+
+        // Mensaje desde config
+        String message = plugin.getConfig().getString("messages.teleported-other-home");
+
+        message = ChatColor.translateAlternateColorCodes('&', message)
+                .replace("%home%", homeName)
+                .replace("%player_home%", target.getName());
+
+        admin.sendMessage(message);
+    }
+
+    public void openAdminConfirmationMenu(Player admin, OfflinePlayer target, String homeName) {
+        FileConfiguration config = plugin.getConfig();
+
+        Inventory confirmMenu = Bukkit.createInventory(new PlayerMenuHolder(), 9,
+                ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu-admin.gui-title")));
+
+        // Crear ítem de confirmación
+        ItemStack confirmItem = new ItemStack(Material.GREEN_WOOL);
+        ItemMeta confirmMeta = confirmItem.getItemMeta();
+        confirmMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&',
+                config.getString("confirmation-menu-admin.confirm-item.display-name")));
+        confirmMeta.getPersistentDataContainer().set(
+                new NamespacedKey(plugin, "homeName"),
+                PersistentDataType.STRING,
+                homeName
+        );
+        confirmItem.setItemMeta(confirmMeta);
+
+        // Crear ítem de cancelación
+        ItemStack cancelItem = new ItemStack(Material.RED_WOOL);
+        ItemMeta cancelMeta = cancelItem.getItemMeta();
+        cancelMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&',
+                config.getString("confirmation-menu-admin.cancel-item.display-name")));
+        cancelItem.setItemMeta(cancelMeta);
+
+        // Agregar ítems al inventario
+        confirmMenu.setItem(3, confirmItem);
+        confirmMenu.setItem(5, cancelItem);
+
+        // Abrir menú
+        admin.openInventory(confirmMenu);
+
+        // Guardar jugador objetivo
+        playerTargetMap.put(admin.getUniqueId(), target);
+        pendingHomeNames.put(admin, homeName); // <-- Añadir esta línea
     }
 }
 

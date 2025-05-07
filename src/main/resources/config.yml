@@ -2,7 +2,7 @@
 #     SetHome GUI        #
 ##########################
 # Author: Beeted_
-# Version: 1.9.3
+# Version: 2.0.0
 
 # For support: https://discord.gg/3k4MbQ3KNv
 # Premium plugin (Support me): https://builtbybit.com/resources/sethome-gui.51982
@@ -10,14 +10,14 @@
 
 # Customize the menu.
 menu:
-  open-command: /home
-  gui-title: "&9&lHome Menu &8⌂"
+  open-command: /homegui
+  gui-title: "&8Home Menu ⌂"
   glass-pane-color: "GRAY"
   center-glass-color: "LIGHT_BLUE"
   info-title: "&8❮❮❮ &7Set Home &8| &7Go Home &8❯❯❯"
   set-home-item:
     material: RED_BED
-    display-name: "&7➤ &3&lSet Home"
+    display-name: "&3&lSet Home"
     lore:
       - "&7With this item you can"
       - "&7set your home and save it"
@@ -26,7 +26,7 @@ menu:
       - "&a(Left-Click to set home)"
   your-homes-item:
     material: OAK_DOOR
-    display-name: "&7➤ &e&lYour homes"
+    display-name: "&e&lYour homes"
     lore:
       - "&7With this object you can"
       - "&7open the menu of your homes"
@@ -35,12 +35,15 @@ menu:
       - "&a(Left-Click to open menu)"
 
 homes-menu:
-  gui-title: "&9&lYour Homes Menu &8⌂"
+  size: 27
+  gui-title: "&8Your Homes - Page %page%/%maxpages%" #Placeholders: %page% - %maxpages%
   go-back-item: "&cGo Back"
   close-item: "&4Close"
+  next-page-item: "&eNext page"
+  previous-page-item: "&cPrevious page"
   home-item:
     display-name: "&7&lHOME &8» &b%home%"
-    #You can use %home% and %world% on lore.
+    #Placeholders: %home% - %world%
     lore:
       - "&c(Right-Click to delete)"
       - "&a(Left-Click to teleport)"
@@ -49,7 +52,42 @@ homes-menu:
     lore:
       - "&7Create a home with /home"
 
+admin-menu:
+  size: 27
+  material: BOOK
+  display-name: "&c&lAdmin Menu"
+  lore:
+    - "&7Delete and Teleport to other"
+    - "&7player homes."
+    - ""
+    - "&a(Left-Click to open menu)"
+  player-head-lore:
+    - "&7Open %player% homes."
+    - ""
+    - "&a(Left-Click to open homes)"
+  gui-title: "&8Admin Menu - Page %page%/%maxpages%" #Placeholders: %page% - %maxpages%
+  go-back-item: "&cGo Back"
+  close-item: "&4Close"
+  next-page-item: "&eNext page"
+  previous-page-item: "&cPrevious page"
+  admin-gui-title: "&8Player Homes - Page %page%/%maxpages%" #Placeholders: %page% - %maxpages% - %player%
+  home-item:
+    display-name: "&7&lHOME &8» &b%home%"
+    #Placeholders: %home% - %world%
+    lore:
+      - "&c(Right-Click to delete)"
+      - "&a(Left-Click to teleport)"
+  no-homes-item:
+    display-name: "&cThis player has no homes."
+
 confirmation-menu:
+  gui-title: "&cConfirm Deletion"
+  confirm-item:
+    display-name: "&aConfirm"
+  cancel-item:
+    display-name: "&cCancel"
+
+confirmation-menu-admin:
   gui-title: "&cConfirm Deletion"
   confirm-item:
     display-name: "&aConfirm"
@@ -59,21 +97,40 @@ confirmation-menu:
 # Customize the messages.
 messages:
   home-established: "&aYour home has been established!"
+  home-established-to-other: "&aHome established for %player%."
   not-established-home: "&cYou don't have an established home."
-  teleported: "&aYou have traveled home: &7%home%"
+  teleported: "&aYou have traveled home: &7%home%" #Placeholders: %home%
+  teleported-other-home: "&aYou have traveled to %home% from %player_home%" #Placeholders: %home% - %player_home%
   home-not-found: "&4Error: Home coordinates not found."
-  home-removed: "&cYour home &b%home% &chas been removed."
-  home-limit-reached: "&cYou have reached the maximum number of homes allowed (%limit%)."
+  home-removed: "&aYour home &b%home% &chas been removed."
+  home-removed-to-other: "&aYou have removed the home %home% from player %player%." #Placeholders: %home% - %player%
+  home-limit-reached: "&cYou have reached the maximum number of homes allowed (%limit%)." #Placeholders: %limit%
   home-exists: "&4A home with that name already exists. Please choose a different name."
   enter-home-name: "&eEnter the name for your home in the chat. Type &7cancel &eif you want to cancel."
   home-cancelled: "&cYou have canceled the creation of the home."
   no-reload-permissions: "&cYou don't have permission to reload the plugin!"
   plugin-reloaded: "&aPlugin reloaded successfully!"
-  teleport-cooldown: "&aYou are being teleported in &7%seconds% &aseconds. Don't move."
+  teleport-cooldown: "&aYou are being teleported in &7%seconds% &aseconds. Don't move." #Placeholders: %seconds%
   teleport-in-progress: "&cYou already have a teleport in progress. Wait to make a new one."
   teleport-cancelled: "&cYour teleport has been canceled because you have moved."
   world-not-found: "&cThe world to travel to has not been found."
   error-blacklisted-world: "&cYou cannot establish a home in this world."
+  player-only: "&cThis command can only be used by players."
+  console-only: "&cThis command can only be used by console."
+  console-or-player: "&cThis command can only be used by console or player."
+  import-no-permission: "&cYou don't have permission to import homes."
+  other-homes-permissions: "&cYou are not allowed to manage other player homes."
+  player-not-found: "&cPlayer %player% has not logged in before." #Placeholders: %player%
+  player-not-online: "&cPlayer %player% is not connected."
+  player-not-selected: "&cNo player has been selected."
+  save-file-error: "&cError saving player file."
+  admin-home-removed: "&aYou have deleted the home %home% from %player%."
+  world-not-exist: "&cThe world of home does not exist."
+  invalid-location: "&cThe home does not have a valid location."
+  player-home-not-exist: "&cThis home does not exist for player %player%." #Placeholders: %player% - %home%
+  saving-error: "&cError saving changes."
+  no-permissions: "&cYou don't have permissions to do that."
+  invalid-coordinates: "&cInvalid coordinates provided. Please make sure X, Y, and Z are numbers."
 
 # You should only set a single title to true.
 # They can only be activated if the cooldown is greater than 0
