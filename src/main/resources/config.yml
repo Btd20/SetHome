@@ -2,7 +2,7 @@
 #     SetHome GUI        #
 ##########################
 # Author: Beeted_
-# Version: 2.0.0
+# Version: 2.0.2
 
 # For support: https://discord.gg/3k4MbQ3KNv
 # Premium plugin (Support me): https://builtbybit.com/resources/sethome-gui.51982
@@ -10,7 +10,8 @@
 
 # Customize the menu.
 menu:
-  open-command: /homegui
+  #It is recommended not to change the command for proper operation.
+  open-command: /home
   gui-title: "&8Home Menu ⌂"
   glass-pane-color: "GRAY"
   center-glass-color: "LIGHT_BLUE"

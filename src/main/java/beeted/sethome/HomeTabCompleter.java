@@ -25,7 +25,7 @@ public class HomeTabCompleter implements TabCompleter {
 
         List<String> suggestions = new ArrayList<>();
         FileConfiguration config = plugin.getConfig();
-        String configuredCommand = config.getString("menu.open-command", "/homegui").replace("/", "");
+        String configuredCommand = config.getString("menu.open-command", "/home").replace("/", "");
 
         if (command.getName().equalsIgnoreCase(configuredCommand) || alias.equalsIgnoreCase(configuredCommand)) {
             if (sender instanceof Player) {

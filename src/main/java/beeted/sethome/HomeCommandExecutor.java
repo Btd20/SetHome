@@ -32,7 +32,7 @@ public class HomeCommandExecutor implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         FileConfiguration config = plugin.getConfig();
-        String userCommand = config.getString("menu.open-command", "/homegui").replace("/", "");
+        String userCommand = config.getString("menu.open-command").replace("/", "");
 
         // Verifica si el comando es exactamente el comando configurado (por ejemplo /homegui)
         if (command.getName().equalsIgnoreCase(userCommand)) {
@@ -401,7 +401,7 @@ public class HomeCommandExecutor implements CommandExecutor {
     }
 
 
-    public static void registerDynamicCommand(SetHome plugin, String commandName) {
+    /*public static void registerDynamicCommand(SetHome plugin, String commandName) {
         try {
             // Obtener el CommandMap
             Field commandMapField = Bukkit.getServer().getClass().getDeclaredField("commandMap");
@@ -424,5 +424,5 @@ public class HomeCommandExecutor implements CommandExecutor {
             plugin.getLogger().severe("Failed to register the dynamic command: " + commandName);
             e.printStackTrace();
         }
-    }
+    }*/
 }

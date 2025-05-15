@@ -26,16 +26,16 @@ public final class SetHome extends JavaPlugin {
         registerConfig();
 
         // Obtener el comando configurado en la configuración
-        String userCommand = getConfig().getString("menu.open-command", "/homegui").replace("/", "");
+        String userCommand = getConfig().getString("menu.open-command").replace("/", "");
 
         // Registrar el comando dinámico
         commandExecutor = new HomeCommandExecutor(this);
-        HomeCommandExecutor.registerDynamicCommand(this, userCommand);
+        //HomeCommandExecutor.registerDynamicCommand(this, userCommand);
 
         getCommand(userCommand).setExecutor(new HomeCommandExecutor(this));
         getCommand(userCommand).setTabCompleter(new HomeTabCompleter(this));
 
-        getLogger().info("SetHome plugin enabled with dynamic command: /" + userCommand);
+        getLogger().info("SetHome GUI plugin enabled with dynamic command: /" + userCommand);
 
         // Registrar eventos
         PluginManager pm = getServer().getPluginManager();
@@ -54,8 +54,8 @@ public final class SetHome extends JavaPlugin {
     @Override
     public void onDisable() {
         // Plugin shutdown logic
-        console.sendMessage("[SetHome] Saving your home...");
-        console.sendMessage("[SetHome] Saving config.");
+        console.sendMessage("[SetHome GUI] Saving your home...");
+        console.sendMessage("[SetHome GUI] Saving config.");
     }
 
     public void registerConfig(){
