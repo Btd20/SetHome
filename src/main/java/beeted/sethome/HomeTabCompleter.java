@@ -21,7 +21,6 @@ public class HomeTabCompleter implements TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        plugin.getLogger().info("TabComplete called for command: " + command.getName());
 
         List<String> suggestions = new ArrayList<>();
         FileConfiguration config = plugin.getConfig();

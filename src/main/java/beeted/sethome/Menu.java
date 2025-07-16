@@ -1,4 +1,9 @@
 package beeted.sethome;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.LuckPermsProvider;
+import net.luckperms.api.cacheddata.CachedMetaData;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.query.QueryOptions;
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -11,6 +16,7 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -24,6 +30,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.awt.SystemColor.menu;
+import static org.apache.logging.log4j.LogManager.getLogger;
 
 public class Menu implements Listener {
 
@@ -91,10 +98,9 @@ public class Menu implements Listener {
 
         String mainMenuTitle = ChatColor.translateAlternateColorCodes('&', config.getString("menu.gui-title"));
         String confirmationMenuTitle = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title"));
-        String adminConfirmationTitle = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu-admin.gui-title"));
 
         // Clic en cabeza de jugador (menú admin)
-        if (clickedItem.getType() == Material.PLAYER_HEAD) {
+        /*if (clickedItem.getType() == Material.PLAYER_HEAD) {
             SkullMeta skullMeta = (SkullMeta) clickedItem.getItemMeta();
             if (skullMeta != null && skullMeta.getOwningPlayer() != null) {
                 OfflinePlayer target = skullMeta.getOwningPlayer();
@@ -109,7 +115,7 @@ public class Menu implements Listener {
                 player.closeInventory();
             }
             return;
-        }
+        }*/
 
         // MENÚ PRINCIPAL
         if (event.getView().getTitle().equals(mainMenuTitle)) {
@@ -212,9 +218,16 @@ public class Menu implements Listener {
 
                                 String title = ChatColor.translateAlternateColorCodes('&', config.getString("titles.cooldown-title.teleport-title"));
                                 String subtitle = ChatColor.translateAlternateColorCodes('&', config.getString("titles.cooldown-title.teleport-subtitle"));
-
                                 player.sendTitle(title.replace("%seconds%", String.valueOf(secondsLeft)),
                                         subtitle.replace("%seconds%", String.valueOf(secondsLeft)), 10, 20, 10);
+
+                                if (config.getBoolean("action-bar.cooldown-title.enable")) {
+                                    String actionBar = ChatColor.translateAlternateColorCodes('&',
+                                                    config.getString("action-bar.cooldown-title.teleport-subtitle"))
+                                            .replace("%seconds%", String.valueOf(secondsLeft));
+                                    player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                                            new net.md_5.bungee.api.chat.TextComponent(actionBar));
+                                }
 
                                 if (--secondsLeft <= 0) this.cancel();
                             }
@@ -225,9 +238,18 @@ public class Menu implements Listener {
                     } else if (config.getBoolean("titles.static-title.enable")) {
                         player.sendTitle(
                                 ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-title")),
-                                ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-subtitle")),
+                                ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-subtitle"))
+                                        .replace("%seconds%", String.valueOf(cooldownSeconds)),
                                 10, cooldownSeconds * 20, 10
                         );
+
+                        if (config.getBoolean("action-bar.static-title.enable")) {
+                            String actionBar = ChatColor.translateAlternateColorCodes('&',
+                                            config.getString("action-bar.static-title.teleport-subtitle"))
+                                    .replace("%seconds%", String.valueOf(cooldownSeconds));
+                            player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                                    new net.md_5.bungee.api.chat.TextComponent(actionBar));
+                        }
                     }
                 }
 
@@ -255,75 +277,8 @@ public class Menu implements Listener {
             }
         }
 
-        // MENÚ DE CONFIRMACIÓN ADMIN
-        if (event.getView().getTitle().equals(adminConfirmationTitle) && isAdmin) {
-            event.setCancelled(true);  // Cancelar el evento para evitar otras interacciones
-
-            // Verifica si el targetMap del admin está vacío antes de proceder
-            if (playerTargetMap.isEmpty()) {
-                player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.player-not-selected")));
-                player.closeInventory();  // Cierra el inventario en caso de error
-                return;
-            }
-
-            String confirmName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu-admin.confirm-item.display-name"));
-            String cancelName = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu-admin.cancel-item.display-name"));
-
-            if (itemName.equals(confirmName)) {
-                OfflinePlayer target = playerTargetMap.get(player.getUniqueId());
-
-                if (target == null) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.player-not-found")));
-                    player.closeInventory();
-                    return;
-                }
-
-                String homeName = pendingHomeNames.get(player);
-
-                if (homeName == null || homeName.isEmpty()) {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")));
-                    player.closeInventory();
-                    return;
-                }
-
-                File targetFile = new File(plugin.getDataFolder(), "data/" + target.getUniqueId() + ".yml");
-                YamlConfiguration targetConfig = YamlConfiguration.loadConfiguration(targetFile);
-
-                List<String> homes = targetConfig.getStringList("homes");
-
-                if (homes.contains(homeName)) {
-                    homes.remove(homeName);
-                    targetConfig.set("homes", homes);
-                    targetConfig.set("homeData." + homeName, null);
-
-                    try {
-                        targetConfig.save(targetFile);
-                        String message = ChatColor.translateAlternateColorCodes('&', config.getString("messages.admin-home-removed"))
-                                .replace("%home%", homeName)
-                                .replace("%player%", target.getName());
-                        player.sendMessage(message);
-                        Bukkit.getScheduler().runTask(plugin, player::closeInventory);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.saving-error")));
-                    }
-                } else {
-                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")));
-                    player.closeInventory();
-                }
-
-                playerTargetMap.remove(player.getUniqueId());
-                pendingHomeNames.remove(player);
-            }
-            if (itemName.equals(cancelName)) {
-                playerTargetMap.remove(player.getUniqueId());  // Limpiar el mapa
-                pendingHomeNames.remove(player);  // Limpiar los hogares pendientes
-                player.closeInventory();  // Cierra el inventario si el usuario cancela
-            }
-        }
-
         // MENÚ DE CONFIRMACIÓN (Jugador)
-        else if (event.getView().getTitle().equals(confirmationMenuTitle)) {
+        if (event.getView().getTitle().equals(confirmationMenuTitle)) {
             event.setCancelled(true);
 
             // Verifica si el targetMap del jugador está vacío antes de proceder
@@ -352,7 +307,7 @@ public class Menu implements Listener {
                 List<String> homes = playerConfig.getStringList("homes");
 
                 // Verifica si el hogar existe en la lista
-                if (!homes.contains(homeName.toLowerCase())) {
+                if (!homes.contains(homeName)) {
                     player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")));
                     player.closeInventory();
                     return;
@@ -363,7 +318,7 @@ public class Menu implements Listener {
                 playerConfig.set("homes", homes);
 
                 // Eliminar los detalles del hogar
-                playerConfig.set("homeData." + homeName, null);
+                playerConfig.set(homeName, null);
 
                 try {
                     playerConfig.save(playerFile);
@@ -411,6 +366,43 @@ public class Menu implements Listener {
             String teleportMessage = ChatColor.translateAlternateColorCodes('&', teleportedToHomePath);
             teleportMessage = teleportMessage.replace("%home%", homeName);
             player.sendMessage(teleportMessage);
+
+            if (plugin.getConfig().getBoolean("titles.teleport-finish.enable")) {
+                String title = ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("titles.teleport-finish.title"));
+                String subtitle = ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("titles.teleport-finish.subtitle", ""));
+                int fadeIn = plugin.getConfig().getInt("titles.teleport-finish.fade-in", 10);
+                int stay = plugin.getConfig().getInt("titles.teleport-finish.stay", 40);
+                int fadeOut = plugin.getConfig().getInt("titles.teleport-finish.fade-out", 10);
+
+                player.sendTitle(title, subtitle, fadeIn, stay, fadeOut);
+            }
+
+            // Obtener configuración del actionbar final
+            if (plugin.getConfig().getBoolean("action-bar.teleport-finish.enable")) {
+                String actionBarMsg = ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("action-bar.teleport-finish.message"));
+                int durationTicks = plugin.getConfig().getInt("action-bar.teleport-finish.duration-ticks", 40); // duración en ticks
+
+                // Enviar el actionbar al menos una vez y programar repeticiones para que dure visible el tiempo deseado
+                player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                        new net.md_5.bungee.api.chat.TextComponent(actionBarMsg));
+
+                if (durationTicks > 20) {
+                    new BukkitRunnable() {
+                        int ticksLeft = durationTicks - 20; // ya enviamos uno al inicio
+
+                        @Override
+                        public void run() {
+                            if (ticksLeft <= 0) {
+                                cancel();
+                                return;
+                            }
+                            player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                                    new net.md_5.bungee.api.chat.TextComponent(actionBarMsg));
+                            ticksLeft -= 20;
+                        }
+                    }.runTaskTimer(plugin, 20L, 20L);
+                }
+            }
         } else {
             // Mensaje de error si el mundo no se encuentra
             String worldNotFound = plugin.getConfig().getString("messages.world-not-found");
@@ -426,16 +418,29 @@ public class Menu implements Listener {
         FileConfiguration config = plugin.getConfig();
         Inventory confirmationMenu = Bukkit.createInventory(new PlayerMenuHolder(), 9, ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.gui-title")));
 
+        // Obtener materiales desde la config con valores por defecto
+        String confirmMaterialName = config.getString("confirmation-menu.confirm-item.material", "GREEN_WOOL");
+        String cancelMaterialName = config.getString("confirmation-menu.cancel-item.material", "RED_WOOL");
+
+        Material confirmMaterial = Material.getMaterial(confirmMaterialName.toUpperCase());
+        Material cancelMaterial = Material.getMaterial(cancelMaterialName.toUpperCase());
+
+        // Validar si el material es nulo (por si el nombre no existe o está mal escrito)
+        if (confirmMaterial == null) confirmMaterial = Material.GREEN_WOOL;
+        if (cancelMaterial == null) cancelMaterial = Material.RED_WOOL;
+
         // Crear ítem de confirmación
-        ItemStack confirmItem = new ItemStack(Material.GREEN_WOOL); // Usar el material que desees
+        ItemStack confirmItem = new ItemStack(confirmMaterial);
         ItemMeta confirmMeta = confirmItem.getItemMeta();
-        confirmMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.confirm-item.display-name")));
+        confirmMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&',
+                config.getString("confirmation-menu.confirm-item.display-name", "&aConfirm")));
         confirmItem.setItemMeta(confirmMeta);
 
         // Crear ítem de cancelación
-        ItemStack cancelItem = new ItemStack(Material.RED_WOOL); // Usar el material que desees
+        ItemStack cancelItem = new ItemStack(cancelMaterial);
         ItemMeta cancelMeta = cancelItem.getItemMeta();
-        cancelMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu.cancel-item.display-name")));
+        cancelMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&',
+                config.getString("confirmation-menu.cancel-item.display-name", "&cCancel")));
         cancelItem.setItemMeta(cancelMeta);
 
         // Agregar ítems al inventario
@@ -802,34 +807,25 @@ public class Menu implements Listener {
 
     private int getMaxHomesForPlayer(Player player) {
         FileConfiguration config = plugin.getConfig();
+        int defaultMaxHomes = config.getInt("default-max-homes", 3);
 
-        // Valor predeterminado de la configuración
-        int defaultMaxHomes = config.getInt("default-max-homes", 3); // Por defecto, 3 hogares
-        int maxHomes = 0; // Inicializamos con 0 para priorizar permisos
+        try {
+            LuckPerms luckPerms = LuckPermsProvider.get();
+            User user = luckPerms.getUserManager().getUser(player.getUniqueId());
 
-        // Recorrer los permisos del jugador
-        for (PermissionAttachmentInfo permInfo : player.getEffectivePermissions()) {
-            String permission = permInfo.getPermission();
-            if (permission.startsWith("sethome.maxhomes.")) {
-                try {
-                    int homes = Integer.parseInt(permission.split("\\.")[2]);
-                    // Actualizar solo si es mayor al valor actual
-                    if (homes > maxHomes) {
-                        maxHomes = homes;
-                    }
-                } catch (NumberFormatException e) {
-                    // Ignoramos los permisos mal formados
-                    e.printStackTrace();
+            if (user != null) {
+                CachedMetaData meta = user.getCachedData().getMetaData(QueryOptions.defaultContextualOptions());
+                String value = meta.getMetaValue("maxhomes");
+
+                if (value != null) {
+                    return Integer.parseInt(value);
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace(); // Puedes cambiar esto por loggers si lo prefieres
         }
 
-        // Si no se encontró ningún permiso relevante, usar el valor por defecto
-        if (maxHomes == 0) {
-            maxHomes = defaultMaxHomes;
-        }
-
-        return maxHomes;
+        return defaultMaxHomes;
     }
 
     public void openAdminMenu(Player player, int page) {
@@ -850,7 +846,7 @@ public class Menu implements Listener {
                 config.getString("admin-menu.gui-title", "&8Admin Menu - Page %page%/%maxpages%")
         ).replace("%page%", String.valueOf(page + 1)).replace("%maxpages%", String.valueOf(totalPages));
 
-        Inventory menu = Bukkit.createInventory(new PlayerMenuHolder(), size, title);
+        Inventory menu = Bukkit.createInventory(new AdminMenuHolder(), size, title);
 
         int start = page * itemsPerPage;
         int end = Math.min(start + itemsPerPage, players.size());
@@ -871,7 +867,7 @@ public class Menu implements Listener {
                 meta.setLore(lore);
 
                 meta.getPersistentDataContainer().set(
-                        new NamespacedKey(plugin, "adminTarget"),
+                        new NamespacedKey(plugin, "adminHomeTarget"),
                         PersistentDataType.STRING,
                         target.getUniqueId().toString()
                 );
@@ -958,7 +954,7 @@ public class Menu implements Listener {
                 .replace("%maxpages%", String.valueOf(totalPages))
                 .replace("%player%", String.valueOf(target.getName()));
 
-        Inventory homesMenu = Bukkit.createInventory(new PlayerMenuHolder(), size, rawTitle);
+        Inventory homesMenu = Bukkit.createInventory(new AdminMenuHolder(), size, rawTitle);
 
         if (homes.isEmpty()) {
             // Ítem informativo si no hay hogares
@@ -1070,59 +1066,195 @@ public class Menu implements Listener {
 
     @EventHandler
     public void onAdminInventoryClick(InventoryClickEvent event) {
-        if (event.getInventory().getHolder() instanceof PlayerMenuHolder) {
+
+        if (!(event.getInventory().getHolder() instanceof AdminMenuHolder)) return;
+
+        FileConfiguration config = plugin.getConfig();
+        String adminConfirmationTitle = ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu-admin.gui-title"));
+
+        event.setCancelled(true);
+        Player admin = (Player) event.getWhoClicked();
+        ItemStack clickedItem = event.getCurrentItem();
+
+        if (clickedItem == null || !clickedItem.hasItemMeta()) return;
+
+        ItemMeta meta = clickedItem.getItemMeta();
+        NamespacedKey pageKey = new NamespacedKey(plugin, "adminHomesPage");
+
+        // ----- Abrir menú de hogares del jugador -----
+        if (clickedItem.getType() == Material.PLAYER_HEAD) {
+            OfflinePlayer target = getTargetFromItemMeta(meta);
+            if (target == null) {
+                admin.sendMessage(ChatColor.RED + "Error: No se pudo determinar el jugador.");
+                return;
+            }
+
+            openPlayerHomesInventory(admin, target, 0);
+            return;
+        }
+
+        // ----- Cambio de página -----
+        if (meta.getPersistentDataContainer().has(pageKey, PersistentDataType.INTEGER)) {
+            int newPage = meta.getPersistentDataContainer().get(pageKey, PersistentDataType.INTEGER);
+            OfflinePlayer target = getTargetFromItemMeta(meta);
+            if (target == null) {
+                admin.sendMessage(ChatColor.RED + "Error: No se pudo determinar el jugador.");
+                return;
+            }
+
+            openPlayerHomesInventory(admin, target, newPage);
+            return;
+        }
+
+        // ----- Botones volver/cerrar -----
+        String displayName = ChatColor.stripColor(meta.getDisplayName());
+        String backItem = ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("homes-menu.go-back-item")));
+        String closeItem = ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("homes-menu.close-item")));
+
+        if (displayName.equalsIgnoreCase(backItem)) {
+            admin.closeInventory();
+            Bukkit.getScheduler().runTaskLater(plugin, () -> openMainMenu(admin), 1);
+            return;
+        }
+
+        if (displayName.equalsIgnoreCase(closeItem)) {
+            admin.closeInventory();
+            return;
+        }
+
+        // ----- Teletransportar -----
+        if (event.getClick() == ClickType.LEFT && clickedItem.getType() == Material.RED_BED) {
+            String homeName = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeName"), PersistentDataType.STRING);
+            if (homeName == null) return;
+
+            OfflinePlayer target = getTargetFromItemMeta(meta);
+            if (target == null) {
+                admin.sendMessage(ChatColor.RED + "Error: No se pudo determinar el jugador.");
+                return;
+            }
+
+            teleportPlayerToHome(admin, target, homeName);
+            return;
+        }
+
+        // ----- Eliminar hogar -----
+        if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
+            String homeName = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeName"), PersistentDataType.STRING);
+            if (homeName == null) return;
+
+            OfflinePlayer target = getTargetFromItemMeta(meta);
+            if (target == null) {
+                admin.sendMessage(ChatColor.RED + "Error: No se pudo determinar el jugador.");
+                return;
+            }
+
+            openAdminConfirmationMenu(admin, target, homeName);
+        }
+        // Confirmación de eliminación del hogar en el menú admin
+        if (event.getView().getTitle().equals(adminConfirmationTitle)) {
             event.setCancelled(true);
-            Player admin = (Player) event.getWhoClicked();
-            ItemStack clickedItem = event.getCurrentItem();
 
             if (clickedItem == null || !clickedItem.hasItemMeta()) return;
 
-            ItemMeta meta = clickedItem.getItemMeta();
-            NamespacedKey pageKey = new NamespacedKey(plugin, "adminHomesPage");
 
-            // Cambio de página
-            if (meta.getPersistentDataContainer().has(pageKey, PersistentDataType.INTEGER)) {
-                int newPage = meta.getPersistentDataContainer().get(pageKey, PersistentDataType.INTEGER);
-                String targetUUID = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING);
-                OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(targetUUID));
-                openPlayerHomesInventory(admin, target, newPage);
-                return;
-            }
+            ItemMeta metaItem = clickedItem.getItemMeta();
+            String itemName = ChatColor.stripColor(metaItem.getDisplayName());
 
-            // Botones volver/cerrar
-            if (meta.getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("homes-menu.go-back-item")))) {
-                admin.closeInventory();
-                Bukkit.getScheduler().runTaskLater(plugin, () -> openMainMenu(admin), 1);
-                return;
-            }
+            String confirmName = ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&',
+                    plugin.getConfig().getString("confirmation-menu-admin.confirm-item.display-name", "&aConfirm")));
+            String cancelName = ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&',
+                    plugin.getConfig().getString("confirmation-menu-admin.cancel-item.display-name", "&cCancel")));
 
-            if (meta.getDisplayName().equals(ChatColor.translateAlternateColorCodes('&', plugin.getConfig().getString("homes-menu.close-item")))) {
-                admin.closeInventory();
-                return;
-            }
+            if (itemName.equals(confirmName)) {
+                String homeName = metaItem.getPersistentDataContainer().get(new NamespacedKey(plugin, "homeName"), PersistentDataType.STRING);
+                String uuidString = metaItem.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING);
 
-            // Teletransportación (clic izquierdo)
-            if (event.getClick() == ClickType.LEFT && clickedItem.getType() == Material.RED_BED && isAdmin) {
-                String homeName = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeName"), PersistentDataType.STRING);
-                if (homeName == null) return;
-
-                String targetUUID = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING);
-                OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(targetUUID));
-
-                teleportPlayerToHome(admin, target, homeName);
-                return;
-            }
-
-            // Eliminar hogar (clic derecho)
-            if (event.getClick() == ClickType.RIGHT && clickedItem.getType() == Material.RED_BED) {
-                String homeName = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeName"), PersistentDataType.STRING);
-                String targetUUID = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "adminHomeTarget"), PersistentDataType.STRING);
-                OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(targetUUID));
-
-                if (homeName != null) {
-                    openAdminConfirmationMenu(admin, target, homeName);
+                if (homeName == null || uuidString == null) {
+                    admin.sendMessage(ChatColor.RED + "Error: No se pudo recuperar la información para eliminar el hogar.");
+                    admin.closeInventory();
+                    return;
                 }
+
+                UUID targetUUID;
+                try {
+                    targetUUID = UUID.fromString(uuidString);
+                } catch (IllegalArgumentException e) {
+                    admin.sendMessage(ChatColor.RED + "Error: UUID del jugador inválido.");
+                    admin.closeInventory();
+                    return;
+                }
+
+                OfflinePlayer target = Bukkit.getOfflinePlayer(targetUUID);
+                File targetFile = new File(plugin.getDataFolder(), "data/" + targetUUID + ".yml");
+                YamlConfiguration targetConfig = YamlConfiguration.loadConfiguration(targetFile);
+
+                List<String> homes = targetConfig.getStringList("homes");
+
+                if (homes.contains(homeName)) {
+                    homes.remove(homeName);
+                    targetConfig.set("homes", homes);
+                    targetConfig.set(homeName, null);
+
+                    try {
+                        targetConfig.save(targetFile);
+
+                        String playerName = target.getName() != null ? target.getName() : targetUUID.toString();
+
+                        String message = ChatColor.translateAlternateColorCodes('&',
+                                        plugin.getConfig().getString("messages.admin-home-removed"))
+                                .replace("%home%", homeName)
+                                .replace("%player%", playerName);
+
+                        admin.sendMessage(message);
+                        admin.closeInventory();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        admin.sendMessage(ChatColor.RED + "Ocurrió un error al guardar los datos.");
+                    }
+                } else {
+                    admin.sendMessage(ChatColor.RED + "El jugador no tiene un hogar con ese nombre.");
+                    admin.closeInventory();
+                }
+            } else if (itemName.equals(cancelName)) {
+                admin.sendMessage(ChatColor.GRAY + "Operación cancelada.");
+                admin.closeInventory();
             }
+
+            return;
+        }
+
+    }
+
+    private OfflinePlayer getTargetFromItemMeta(ItemMeta meta) {
+        if (meta == null) return null;
+
+        NamespacedKey key = new NamespacedKey(plugin, "adminHomeTarget");
+
+        // ¿existe la clave?
+        if (!meta.getPersistentDataContainer().has(key, PersistentDataType.STRING)) {
+            plugin.getLogger().warning("[SetHome] Item sin adminHomeTarget.");
+            return null;
+        }
+
+        String uuidString = meta.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+
+        if (uuidString == null) {
+            plugin.getLogger().warning("[SetHome] adminHomeTarget es null.");
+            return null;
+        }
+
+        uuidString = uuidString.trim();
+        if (uuidString.length() == 0) {
+            plugin.getLogger().warning("[SetHome] adminHomeTarget está vacío.");
+            return null;
+        }
+
+        try {
+            UUID uuid = UUID.fromString(uuidString);
+            return Bukkit.getOfflinePlayer(uuid);
+        } catch (IllegalArgumentException ex) {
+            plugin.getLogger().warning("[SetHome] UUID inválido: " + uuidString);
+            return null;
         }
     }
 
@@ -1175,26 +1307,44 @@ public class Menu implements Listener {
     public void openAdminConfirmationMenu(Player admin, OfflinePlayer target, String homeName) {
         FileConfiguration config = plugin.getConfig();
 
-        Inventory confirmMenu = Bukkit.createInventory(new PlayerMenuHolder(), 9,
+        Inventory confirmMenu = Bukkit.createInventory(new AdminMenuHolder(), 9,
                 ChatColor.translateAlternateColorCodes('&', config.getString("confirmation-menu-admin.gui-title")));
 
+        // Leer materiales desde la config
+        String confirmMaterialName = config.getString("confirmation-menu.confirm-item.material", "GREEN_WOOL");
+        String cancelMaterialName = config.getString("confirmation-menu.cancel-item.material", "RED_WOOL");
+
+        Material confirmMaterial = Material.getMaterial(confirmMaterialName.toUpperCase());
+        Material cancelMaterial = Material.getMaterial(cancelMaterialName.toUpperCase());
+
+        if (confirmMaterial == null) confirmMaterial = Material.GREEN_WOOL;
+        if (cancelMaterial == null) cancelMaterial = Material.RED_WOOL;
+
         // Crear ítem de confirmación
-        ItemStack confirmItem = new ItemStack(Material.GREEN_WOOL);
+        ItemStack confirmItem = new ItemStack(confirmMaterial);
         ItemMeta confirmMeta = confirmItem.getItemMeta();
         confirmMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&',
-                config.getString("confirmation-menu-admin.confirm-item.display-name")));
+                config.getString("confirmation-menu.confirm-item.display-name", "&aConfirm")));
+
+        // Guardar homeName y target UUID en el ítem
         confirmMeta.getPersistentDataContainer().set(
                 new NamespacedKey(plugin, "homeName"),
                 PersistentDataType.STRING,
                 homeName
         );
+        confirmMeta.getPersistentDataContainer().set(
+                new NamespacedKey(plugin, "adminHomeTarget"),
+                PersistentDataType.STRING,
+                target.getUniqueId().toString()
+        );
+
         confirmItem.setItemMeta(confirmMeta);
 
         // Crear ítem de cancelación
-        ItemStack cancelItem = new ItemStack(Material.RED_WOOL);
+        ItemStack cancelItem = new ItemStack(cancelMaterial);
         ItemMeta cancelMeta = cancelItem.getItemMeta();
         cancelMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&',
-                config.getString("confirmation-menu-admin.cancel-item.display-name")));
+                config.getString("confirmation-menu.cancel-item.display-name", "&cCancel")));
         cancelItem.setItemMeta(cancelMeta);
 
         // Agregar ítems al inventario
@@ -1204,9 +1354,9 @@ public class Menu implements Listener {
         // Abrir menú
         admin.openInventory(confirmMenu);
 
-        // Guardar jugador objetivo
+        // Guardar jugador objetivo y home temporalmente si lo usas en otra lógica (opcional)
         playerTargetMap.put(admin.getUniqueId(), target);
-        pendingHomeNames.put(admin, homeName); // <-- Añadir esta línea
+        pendingHomeNames.put(admin, homeName);
     }
 }
 

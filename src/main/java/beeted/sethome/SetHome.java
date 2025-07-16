@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
@@ -12,6 +13,10 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -22,28 +27,25 @@ public final class SetHome extends JavaPlugin {
     private HomeTabCompleter commandTabExecutor;
     @Override
     public void onEnable() {
-        // Cargar configuración
-        registerConfig();
+        // Crear config por defecto si no existe
+        saveDefaultConfig();
 
-        // Obtener el comando configurado en la configuración
+        // Recargar para que Bukkit lea los cambios
+        reloadConfig();
+
         String userCommand = getConfig().getString("menu.open-command").replace("/", "");
 
-        // Registrar el comando dinámico
         commandExecutor = new HomeCommandExecutor(this);
-        //HomeCommandExecutor.registerDynamicCommand(this, userCommand);
 
-        getCommand(userCommand).setExecutor(new HomeCommandExecutor(this));
+        getCommand(userCommand).setExecutor(commandExecutor);
         getCommand(userCommand).setTabCompleter(new HomeTabCompleter(this));
 
         getLogger().info("SetHome GUI plugin enabled with dynamic command: /" + userCommand);
 
-        // Registrar eventos
-        PluginManager pm = getServer().getPluginManager();
-        pm.registerEvents(new Menu(this), this);
+        getServer().getPluginManager().registerEvents(new Menu(this), this);
 
-        // Métricas
         int pluginId = 23348;
-        Metrics metrics = new Metrics(this, pluginId);
+        new Metrics(this, pluginId);
     }
 
 
@@ -58,13 +60,10 @@ public final class SetHome extends JavaPlugin {
         console.sendMessage("[SetHome GUI] Saving config.");
     }
 
-    public void registerConfig(){
-        File config = new File(this.getDataFolder(), "config.yml");
-        String configRute = config.getPath();
-        if(!config.exists()){
-            this.getConfig().options().copyDefaults(true);
-            saveDefaultConfig();
-        }
+    public void registerConfig() {
+        saveDefaultConfig(); // crea config si no existe
+        getConfig().options().copyDefaults(true);
+        saveConfig(); // guarda las claves por defecto nuevas si faltan
     }
 
     public File getPlayerDataFile(UUID uuid) {

@@ -2,7 +2,7 @@
 #     SetHome GUI        #
 ##########################
 # Author: Beeted_
-# Version: 2.0.2
+# Version: 2.0.5
 
 # For support: https://discord.gg/3k4MbQ3KNv
 # Premium plugin (Support me): https://builtbybit.com/resources/sethome-gui.51982
@@ -84,15 +84,19 @@ admin-menu:
 confirmation-menu:
   gui-title: "&cConfirm Deletion"
   confirm-item:
+    material: GREEN_WOOL
     display-name: "&aConfirm"
   cancel-item:
+    material: RED_WOOL
     display-name: "&cCancel"
 
 confirmation-menu-admin:
   gui-title: "&cConfirm Deletion"
   confirm-item:
+    material: GREEN_WOOL
     display-name: "&aConfirm"
   cancel-item:
+    material: RED_WOOL
     display-name: "&cCancel"
 
 # Customize the messages.
@@ -103,7 +107,7 @@ messages:
   teleported: "&aYou have traveled home: &7%home%" #Placeholders: %home%
   teleported-other-home: "&aYou have traveled to %home% from %player_home%" #Placeholders: %home% - %player_home%
   home-not-found: "&4Error: Home coordinates not found."
-  home-removed: "&aYour home &b%home% &chas been removed."
+  home-removed: "&aYour home &b%home% &ahas been removed."
   home-removed-to-other: "&aYou have removed the home %home% from player %player%." #Placeholders: %home% - %player%
   home-limit-reached: "&cYou have reached the maximum number of homes allowed (%limit%)." #Placeholders: %limit%
   home-exists: "&4A home with that name already exists. Please choose a different name."
@@ -144,6 +148,26 @@ titles:
     enable: false
     teleport-title: "&aTeleporting..."
     teleport-subtitle: "&eTeleporting in %seconds% seconds..."
+  teleport-finish:
+    enable: true
+    title: "&a¡Teleported!"
+    subtitle: ""
+    fade-in: 10
+    stay: 40
+    fade-out: 10
+action-bar:
+  cooldown-title:
+    enable: true
+    teleport-title: "&aTeleporting..."
+    teleport-subtitle: "&eTeleporting in %seconds% seconds..."
+  static-title:
+    enable: false
+    teleport-title: "&aTeleporting..."
+    teleport-subtitle: "&eTeleporting in %seconds% seconds..."
+  teleport-finish:
+    enable: true
+    message: "&a¡Teleported!"
+    duration-ticks: 40 #(20 ticks = 1 sec)
 
 blacklisted-worlds:
   - world_nether
