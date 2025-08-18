@@ -782,6 +782,18 @@ public class Menu implements Listener {
         Location loc = player.getLocation();
         String worldName = loc.getWorld().getName();
 
+        List<String> blacklistedWorlds = config.getStringList("blacklisted-worlds");
+        if (blacklistedWorlds.contains(worldName)) {
+            String bypassPermission = "sethome.world.bypass." + worldName;
+            if (!player.hasPermission(bypassPermission)) {
+                String errorMessage = config.getString("messages.world-blacklisted");
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&', errorMessage));
+                pendingHomeNames.remove(player);
+                event.setCancelled(true);
+                return;
+            }
+        }
+
         homes.add(homeName);
         playerConfig.set("homes", homes);
         playerConfig.set(homeName + ".world", worldName);
