@@ -9,6 +9,7 @@ import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -249,6 +250,8 @@ public class HomeCommandExecutor implements CommandExecutor {
 
                 // Ruta de almacenamiento de los datos del jugador
                 File dataFolder = new File(plugin.getDataFolder(), "data");
+                if (!dataFolder.exists()) dataFolder.mkdirs();
+
                 File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
                 YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
 
@@ -259,6 +262,14 @@ public class HomeCommandExecutor implements CommandExecutor {
                 }
 
                 List<String> homes = playerConfig.getStringList("homes");
+
+                // ✅ Verificar límite de homes
+                int maxHomes = getMaxHomesForPlayer(player);
+                if (homes.size() >= maxHomes) {
+                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&',
+                            config.getString("messages.home-limit-reached").replace("%limit%", String.valueOf(maxHomes))));
+                    return true;
+                }
 
                 // Crear la ubicación del hogar usando la ubicación actual del jugador
                 Location homeLocation = player.getLocation();
@@ -277,7 +288,8 @@ public class HomeCommandExecutor implements CommandExecutor {
                 // Guardar el archivo de configuración
                 try {
                     playerConfig.save(playerFile);
-                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-established")).replace("%home%", homeName));
+                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&',
+                            config.getString("messages.home-established")).replace("%home%", homeName));
                 } catch (IOException e) {
                     e.printStackTrace();
                     sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.saving-error")));
@@ -350,7 +362,6 @@ public class HomeCommandExecutor implements CommandExecutor {
             // Si hay un subcomando 'reload'
             if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
                 if (sender.hasPermission("sethome.reload")) {
-                    plugin.reloadConfig();
                     sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.plugin-reloaded", "&aPlugin reloaded successfully.")));
                 } else {
                     sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions", "&cYou don't have permission to do that.")));
@@ -425,4 +436,27 @@ public class HomeCommandExecutor implements CommandExecutor {
             e.printStackTrace();
         }
     }*/
+
+    private int getMaxHomesForPlayer(Player player) {
+        FileConfiguration config = plugin.getConfig();
+        int defaultMaxHomes = config.getInt("default-maxhomes", 3); // 👈 asegúrate de que coincide con tu config.yml
+
+        int maxHomes = -1;
+
+        // 🔎 Buscar permisos del estilo sethome.maxhomes.X
+        for (PermissionAttachmentInfo permInfo : player.getEffectivePermissions()) {
+            String perm = permInfo.getPermission().toLowerCase();
+            if (perm.startsWith("sethome.maxhomes.")) {
+                try {
+                    int value = Integer.parseInt(perm.replace("sethome.maxhomes.", ""));
+                    if (value > maxHomes) {
+                        maxHomes = value;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
+        // Si no tiene ningún permiso, usar el default del config
+        return maxHomes > -1 ? maxHomes : defaultMaxHomes;
+    }
 }

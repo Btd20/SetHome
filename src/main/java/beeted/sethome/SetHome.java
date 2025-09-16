@@ -1,5 +1,9 @@
 package beeted.sethome;
 
+import dev.dejvokep.boostedyaml.YamlDocument;
+import dev.dejvokep.boostedyaml.settings.general.GeneralSettings;
+import dev.dejvokep.boostedyaml.settings.Settings;
+import dev.dejvokep.boostedyaml.settings.loader.LoaderSettings;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.ConsoleCommandSender;
@@ -17,14 +21,31 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public final class SetHome extends JavaPlugin {
     ConsoleCommandSender console = Bukkit.getConsoleSender();
     private HomeCommandExecutor commandExecutor;
+    //public YamlDocument configYaml;
     private HomeTabCompleter commandTabExecutor;
+    private YamlDocument configYaml;
+
+    // Lista de admins que están eliminando un hogar
+    private final Set<UUID> adminsDeletingHome = new HashSet<>();
+
+    // Métodos auxiliares
+    public void startDeletingHome(UUID adminUUID) {
+        adminsDeletingHome.add(adminUUID);
+    }
+
+    public void stopDeletingHome(UUID adminUUID) {
+        adminsDeletingHome.remove(adminUUID);
+    }
+
+    public boolean isDeletingHome(UUID adminUUID) {
+        return adminsDeletingHome.contains(adminUUID);
+    }
+
     @Override
     public void onEnable() {
         // Crear config por defecto si no existe
@@ -32,6 +53,23 @@ public final class SetHome extends JavaPlugin {
 
         // Recargar para que Bukkit lea los cambios
         reloadConfig();
+
+        try {
+            configYaml = YamlDocument.create(
+                    new File(getDataFolder(), "config.yml"),
+                    getResource("config.yml"),
+                    GeneralSettings.DEFAULT, // mantiene la estructura del archivo más limpia
+                    LoaderSettings.builder()
+                            .setAutoUpdate(true)
+                            .build()
+            );
+
+            // Guardar los valores faltantes de vuelta al config.yml
+            configYaml.save();
+        } catch (IOException e) {
+            e.printStackTrace();
+            getLogger().severe("Could not load config.yml.");
+        }
 
         String userCommand = getConfig().getString("menu.open-command").replace("/", "");
 

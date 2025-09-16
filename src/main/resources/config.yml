@@ -2,11 +2,13 @@
 #     SetHome GUI        #
 ##########################
 # Author: Beeted_
-# Version: 2.0.5
+# Version: 2.1.0
 
 # For support: https://discord.gg/3k4MbQ3KNv
 # Premium plugin (Support me): https://builtbybit.com/resources/sethome-gui.51982
 # If you liked the plugin, I would greatly appreciate a review on the Spigot page :)
+
+config-version: 1
 
 # Customize the menu.
 menu:
