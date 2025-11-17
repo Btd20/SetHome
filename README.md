@@ -21,5 +21,5 @@ For support, create a new issue on my [GitHub](https://github.com/Btd20/customwe
 
 ## Documentation
 
-To see all the [Documentation](https://www.spigotmc.org/resources/⭐-epicsetspawn-⭐-1-13-1-21-8-set-up-and-travel-to-spawn.128901), visit the official spigot page of the EpicSetSpawn plugin.
+To see all the [Documentation](https://www.spigotmc.org/resources/⭐-epicsetspawn-⭐-1-13-1-21-8-set-up-and-travel-to-spawn.128901](https://www.spigotmc.org/resources/⭐-sethome-gui-⭐-1-13-1-21-10-set-up-and-travel-to-your-home.109828)), visit the official spigot page of the EpicSetSpawn plugin.
 
