@@ -231,6 +231,32 @@ public class HomeCommandExecutor implements CommandExecutor {
                 return true;
             }
 
+            // /homegui admin seeplayer <jugador>
+            if (args.length == 3 && args[0].equalsIgnoreCase("admin") && args[1].equalsIgnoreCase("seeplayer")) {
+                if (!(sender instanceof Player)) {
+                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.player-only")));
+                    return true;
+                }
+
+                Player admin = (Player) sender;
+
+                if (!admin.hasPermission("sethome.admin")) {
+                    admin.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions")));
+                    return true;
+                }
+
+                OfflinePlayer target = Bukkit.getOfflinePlayer(args[2]);
+                if (target == null || !target.hasPlayedBefore()) {
+                    admin.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.player-not-found")));
+                    return true;
+                }
+
+                // Abre directamente los homes del jugador objetivo
+                menu.openPlayerHomesInventory(admin, target, 0);
+                return true;
+            }
+
+
             // Comando /homegui create <nombre_del_hogar>
             if (args.length == 2 && args[0].equalsIgnoreCase("create")) {
                 if (!sender.hasPermission("sethome.use")) {
@@ -362,9 +388,16 @@ public class HomeCommandExecutor implements CommandExecutor {
             // Si hay un subcomando 'reload'
             if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
                 if (sender.hasPermission("sethome.reload")) {
-                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.plugin-reloaded", "&aPlugin reloaded successfully.")));
+
+                    // ✅ Recargar la configuración
+                    plugin.reloadConfig();
+                    plugin.saveDefaultConfig();
+
+                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&',
+                            plugin.getConfig().getString("messages.plugin-reloaded", "&aPlugin reloaded successfully.")));
                 } else {
-                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions", "&cYou don't have permission to do that.")));
+                    sender.sendMessage(ChatColor.translateAlternateColorCodes('&',
+                            plugin.getConfig().getString("messages.no-permissions", "&cYou don't have permission to do that.")));
                 }
                 return true;
             }

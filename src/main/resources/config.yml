@@ -2,7 +2,7 @@
 #     SetHome GUI        #
 ##########################
 # Author: Beeted_
-# Version: 2.1.0
+# Version: 2.1.2
 
 # For support: https://discord.gg/3k4MbQ3KNv
 # Premium plugin (Support me): https://builtbybit.com/resources/sethome-gui.51982
@@ -19,7 +19,11 @@ menu:
   center-glass-color: "LIGHT_BLUE"
   info-title: "&8❮❮❮ &7Set Home &8| &7Go Home &8❯❯❯"
   set-home-item:
+    # You can add custom heads from head-database using the following format:
+    # material: HEAD
+    # value: eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvN2VlY2NlODUzNzlmYTJkNTY5MmZiZTQ2MjAwZjQyN2YyODJkYjhkMWFjODgwOTE0NjVjZWI0MWMxYTZhYTIwZiJ9fX0=
     material: RED_BED
+    value: ""
     display-name: "&3&lSet Home"
     lore:
       - "&7With this item you can"
@@ -28,7 +32,11 @@ menu:
       - ""
       - "&a(Left-Click to set home)"
   your-homes-item:
+    # You can add custom heads from head-database using the following format:
+    # material: HEAD
+    # value: eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvN2VlY2NlODUzNzlmYTJkNTY5MmZiZTQ2MjAwZjQyN2YyODJkYjhkMWFjODgwOTE0NjVjZWI0MWMxYTZhYTIwZiJ9fX0=
     material: OAK_DOOR
+    value: ""
     display-name: "&e&lYour homes"
     lore:
       - "&7With this object you can"
@@ -57,7 +65,11 @@ homes-menu:
 
 admin-menu:
   size: 27
+  # You can add custom heads from head-database using the following format:
+  # material: HEAD
+  # value: eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvN2VlY2NlODUzNzlmYTJkNTY5MmZiZTQ2MjAwZjQyN2YyODJkYjhkMWFjODgwOTE0NjVjZWI0MWMxYTZhYTIwZiJ9fX0=
   material: BOOK
+  value: ""
   display-name: "&c&lAdmin Menu"
   lore:
     - "&7Delete and Teleport to other"
@@ -158,18 +170,16 @@ titles:
     stay: 40
     fade-out: 10
 action-bar:
-  cooldown-title:
+  cooldown:
     enable: true
-    teleport-title: "&aTeleporting..."
-    teleport-subtitle: "&eTeleporting in %seconds% seconds..."
-  static-title:
+    message: "&eTeleporting in %seconds% seconds..."
+  static:
     enable: false
-    teleport-title: "&aTeleporting..."
-    teleport-subtitle: "&eTeleporting in %seconds% seconds..."
+    message: "&eTeleporting in %seconds% seconds..."
   teleport-finish:
     enable: true
     message: "&a¡Teleported!"
-    duration-ticks: 40 #(20 ticks = 1 sec)
+    duration-ticks: 40 # (20 ticks = 1 sec)
 
 blacklisted-worlds:
   - world_nether

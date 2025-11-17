@@ -1,4 +1,5 @@
 package beeted.sethome;
+import beeted.sethome.utils.SkullUtils;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.cacheddata.CachedMetaData;
@@ -206,6 +207,8 @@ public class Menu implements Listener {
                 teleportingPlayers.add(player);
 
                 if (cooldownSeconds > 0) {
+
+                    // ==== TITULO DINÁMICO ====
                     if (config.getBoolean("titles.cooldown-title.enable")) {
                         BukkitRunnable countdownTitle = new BukkitRunnable() {
                             int secondsLeft = cooldownSeconds;
@@ -223,20 +226,14 @@ public class Menu implements Listener {
                                 player.sendTitle(title.replace("%seconds%", String.valueOf(secondsLeft)),
                                         subtitle.replace("%seconds%", String.valueOf(secondsLeft)), 10, 20, 10);
 
-                                if (config.getBoolean("action-bar.cooldown-title.enable")) {
-                                    String actionBar = ChatColor.translateAlternateColorCodes('&',
-                                                    config.getString("action-bar.cooldown-title.teleport-subtitle"))
-                                            .replace("%seconds%", String.valueOf(secondsLeft));
-                                    player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                                            new net.md_5.bungee.api.chat.TextComponent(actionBar));
-                                }
-
                                 if (--secondsLeft <= 0) this.cancel();
                             }
                         };
 
                         countdownTitle.runTaskTimer(plugin, 0L, 20L);
                         teleportCountdownTasks.put(player, countdownTitle);
+
+                        // ==== TITULO ESTÁTICO ====
                     } else if (config.getBoolean("titles.static-title.enable")) {
                         player.sendTitle(
                                 ChatColor.translateAlternateColorCodes('&', config.getString("titles.static-title.teleport-title")),
@@ -244,14 +241,30 @@ public class Menu implements Listener {
                                         .replace("%seconds%", String.valueOf(cooldownSeconds)),
                                 10, cooldownSeconds * 20, 10
                         );
+                    }
 
-                        if (config.getBoolean("action-bar.static-title.enable")) {
-                            String actionBar = ChatColor.translateAlternateColorCodes('&',
-                                            config.getString("action-bar.static-title.teleport-subtitle"))
-                                    .replace("%seconds%", String.valueOf(cooldownSeconds));
-                            player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                                    new net.md_5.bungee.api.chat.TextComponent(actionBar));
-                        }
+                    // ==== ACTIONBAR INDEPENDIENTE ====
+                    if (config.getBoolean("action-bar.cooldown.enable")) {
+                        BukkitRunnable actionBarTask = new BukkitRunnable() {
+                            int secondsLeft = cooldownSeconds;
+
+                            @Override
+                            public void run() {
+                                if (!teleportingPlayers.contains(player)) {
+                                    this.cancel();
+                                    return;
+                                }
+
+                                String actionBar = ChatColor.translateAlternateColorCodes('&',
+                                                config.getString("action-bar.cooldown.message"))
+                                        .replace("%seconds%", String.valueOf(secondsLeft));
+                                player.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                                        new net.md_5.bungee.api.chat.TextComponent(actionBar));
+
+                                if (--secondsLeft <= 0) this.cancel();
+                            }
+                        };
+                        actionBarTask.runTaskTimer(plugin, 0L, 20L);
                     }
                 }
 
@@ -538,9 +551,18 @@ public class Menu implements Listener {
 
         // Set Home
         String setHomeMaterialName = config.getString("menu.set-home-item.material").toUpperCase();
+        String setHomeValue = config.getString("menu.set-home-item.value");
         Material setHomeMaterial = Material.matchMaterial(setHomeMaterialName);
-        if (setHomeMaterial == null) setHomeMaterial = Material.RED_BED;
-        ItemStack setHomeItem = new ItemStack(setHomeMaterial);
+
+        ItemStack setHomeItem;
+
+        if (setHomeMaterialName.equalsIgnoreCase("HEAD") && setHomeValue != null) {
+            setHomeItem = SkullUtils.getHeadFromBase64(setHomeValue);
+        } else {
+            if (setHomeMaterial == null) setHomeMaterial = Material.RED_BED;
+            setHomeItem = new ItemStack(setHomeMaterial);
+        }
+
         ItemMeta setHomeMeta = setHomeItem.getItemMeta();
         setHomeMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("menu.set-home-item.display-name")));
         List<String> setHomeLore = config.getStringList("menu.set-home-item.lore");
@@ -549,7 +571,9 @@ public class Menu implements Listener {
         }
         setHomeMeta.setLore(setHomeLore);
         setHomeItem.setItemMeta(setHomeMeta);
+
         menu.setItem(11, setHomeItem);
+
 
         // Your Homes
         String homeListMaterialName = config.getString("menu.your-homes-item.material").toUpperCase();
@@ -669,9 +693,10 @@ public class Menu implements Listener {
                         lore.set(j, ChatColor.translateAlternateColorCodes('&', lore.get(j)
                                 .replace("%home%", home)
                                 .replace("%world%", world)
-                                .replace("%x%", String.valueOf(x))
-                                .replace("%y%", String.valueOf(y))
-                                .replace("%z%", String.valueOf(z))));
+                                .replace("%x%", String.valueOf(Math.round(x)))
+                                .replace("%y%", String.valueOf(Math.round(y)))
+                                .replace("%z%", String.valueOf(Math.round(z)))
+                        ));
                     }
                     bedMeta.setLore(lore);
                 }
@@ -751,8 +776,9 @@ public class Menu implements Listener {
             return; // Evita crear el hogar
         }
 
-        if (!pendingHomeNames.containsKey(player)) return;
-        if (!pendingAdminHomes.containsKey(player)) return;
+        if (!pendingHomeNames.containsKey(player) && !pendingAdminHomes.containsKey(player)) return;
+        //if (!pendingHomeNames.containsKey(player)) return;
+        //if (!pendingAdminHomes.containsKey(player)) return;
 
         String message = event.getMessage();
 

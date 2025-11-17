@@ -69,6 +69,7 @@ public class HomeTabCompleter implements TabCompleter {
                 if (args.length == 2 && args[0].equalsIgnoreCase("admin")) {
                     suggestions.add("create");
                     suggestions.add("delete");
+                    suggestions.add("seeplayer");
                 }
 
                 // /homegui admin create <jugador>
@@ -95,6 +96,13 @@ public class HomeTabCompleter implements TabCompleter {
 
                 // /homegui admin delete <jugador>
                 if (args.length == 3 && args[0].equalsIgnoreCase("admin") && args[1].equalsIgnoreCase("delete")) {
+                    for (Player online : Bukkit.getOnlinePlayers()) {
+                        suggestions.add(online.getName());
+                    }
+                }
+
+                // /homegui admin seeplayer <jugador>
+                if (args.length == 3 && args[0].equalsIgnoreCase("admin") && args[1].equalsIgnoreCase("seeplayer")) {
                     for (Player online : Bukkit.getOnlinePlayers()) {
                         suggestions.add(online.getName());
                     }
