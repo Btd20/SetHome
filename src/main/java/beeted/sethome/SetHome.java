@@ -71,14 +71,22 @@ public final class SetHome extends JavaPlugin {
             getLogger().severe("Could not load config.yml.");
         }
 
-        String userCommand = getConfig().getString("menu.open-command").replace("/", "");
+        HomeCommandExecutor commandExecutor = new HomeCommandExecutor(this);
+        HomeTabCompleter tabCompleter = new HomeTabCompleter(this);
 
-        commandExecutor = new HomeCommandExecutor(this);
+        // 2. Registrar el comando /home
+        if (getCommand("home") != null) {
+            getCommand("home").setExecutor(commandExecutor);
+            getCommand("home").setTabCompleter(tabCompleter);
+        }
 
-        getCommand(userCommand).setExecutor(commandExecutor);
-        getCommand(userCommand).setTabCompleter(new HomeTabCompleter(this));
+        // 3. Registrar el comando /homegui
+        if (getCommand("homegui") != null) {
+            getCommand("homegui").setExecutor(commandExecutor);
+            getCommand("homegui").setTabCompleter(tabCompleter);
+        }
 
-        getLogger().info("SetHome GUI plugin enabled with dynamic command: /" + userCommand);
+        getLogger().info("SetHome GUI plugin enabled.");
 
         getServer().getPluginManager().registerEvents(new Menu(this), this);
 

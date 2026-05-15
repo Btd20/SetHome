@@ -5,6 +5,9 @@ main: beeted.sethome.SetHome
 api-version: 1.13
 
 commands:
+  homegui:
+    description: Functions main command.
+    aliases: [homegui]
   home:
-    description: Open the home menu.
-    aliases: [homegui, sethomegui]
+    description: Main homes command.
+    aliases: [homes]

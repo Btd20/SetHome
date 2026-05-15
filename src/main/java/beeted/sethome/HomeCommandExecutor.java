@@ -33,10 +33,58 @@ public class HomeCommandExecutor implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         FileConfiguration config = plugin.getConfig();
-        String userCommand = config.getString("menu.open-command").replace("/", "");
+
+        // ==========================================
+        // LOGICA PARA EL COMANDO /HOME <NOMBRE>
+        // ==========================================
+        if (command.getName().equalsIgnoreCase("home")) {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.player-only")));
+                return true;
+            }
+
+            Player player = (Player) sender;
+
+            // Si solo escribe /home, abrimos el menú (comportamiento por defecto)
+            if (args.length == 0) {
+                if (!player.hasPermission("sethome.use")) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions")));
+                    return true;
+                }
+                menu.openMainMenu(player);
+                return true;
+            }
+
+            // Si escribe /home <nombre>, teletransportar
+            if (args.length == 1) {
+                String homeName = args[0];
+
+                if (!player.hasPermission("sethome.use")) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.no-permissions", "&cYou don't have permission to do that.")));
+                    return true;
+                }
+
+                // Verificamos si el archivo del jugador existe y tiene ese home
+                File playerFile = new File(new File(plugin.getDataFolder(), "data"), player.getUniqueId() + ".yml");
+                if (!playerFile.exists()) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")).replace("%home%", homeName));
+                    return true;
+                }
+
+                YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+                if (playerConfig.contains(homeName)) {
+                    // Ejecutamos tu método de teletransporte
+                    menu.teleportPlayerToHome(player, homeName);
+                } else {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-not-found")).replace("%home%", homeName));
+                }
+                return true;
+            }
+            return true;
+        }
 
         // Verifica si el comando es exactamente el comando configurado (por ejemplo /homegui)
-        if (command.getName().equalsIgnoreCase(userCommand)) {
+        if (command.getName().equalsIgnoreCase("homegui")) {
 
             // Si no hay argumentos, abrir el menú
             if (args.length == 0) {

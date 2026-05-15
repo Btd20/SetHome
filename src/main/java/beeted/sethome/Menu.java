@@ -358,7 +358,7 @@ public class Menu implements Listener {
 
 
         // Método para teletransportar al jugador al hogar
-    private void teleportPlayerToHome(Player player, String homeName) {
+    public void teleportPlayerToHome(Player player, String homeName) {
         File dataFolder = new File(plugin.getDataFolder(), "data");
         File playerFile = new File(dataFolder, player.getUniqueId() + ".yml");
         YamlConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
@@ -795,16 +795,19 @@ public class Menu implements Listener {
         }
 
         if (!pendingHomeNames.containsKey(player) && !pendingAdminHomes.containsKey(player)) return;
-        //if (!pendingHomeNames.containsKey(player)) return;
-        //if (!pendingAdminHomes.containsKey(player)) return;
 
         String rawMessage = event.getMessage();
         event.setCancelled(true); // siempre cancelamos para que no aparezca en el chat global
 
-        // Normalizar mensaje: quitar colores y espacios
+        // Normalizar mensaje: quitar colores y procesar espacios según config
+        boolean allowWhitespace = config.getBoolean("enable-whitespace", false);
         String message = ChatColor.stripColor(
                 ChatColor.translateAlternateColorCodes('&', rawMessage)
-        ).trim().replaceAll("\\s+", "");
+        ).trim();
+
+        if (!allowWhitespace) {
+            message = message.replaceAll("\\s+", "");
+        }
 
         // Cancelar operación
         if (message.equalsIgnoreCase("cancel")) {
@@ -820,19 +823,30 @@ public class Menu implements Listener {
                 ChatColor.translateAlternateColorCodes('&', message)
         );
 
-        String homeName = cleanMessage
-                .trim()                  // quita espacios inicio/fin
-                .replaceAll("\\s+", ""); // elimina espacios (incluye invisibles)
+        String homeName = cleanMessage.trim();
+        if (!allowWhitespace) {
+            homeName = homeName.replaceAll("\\s+", "");
+        }
 
         String regex = config.getString("home-name-regex");
 
-        if (regex == null || !homeName.matches(regex)) {
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&',
-                    config.getString("messages.invalid-home-name")));
+        // --- GESTIÓN DE ERROR DE REGEX ---
+        try {
+            if (regex == null || !homeName.matches(regex)) {
+                player.sendMessage(ChatColor.translateAlternateColorCodes('&',
+                        config.getString("messages.invalid-home-name")));
+                pendingHomeNames.remove(player);
+                pendingAdminHomes.remove(player);
+                return;
+            }
+        } catch (Exception e) {
+            // Si el regex en la config está mal escrito, saltará aquí en lugar de romper el plugin
+            plugin.getLogger().warning("Invalid 'home-name-regex' in config: " + regex);
             pendingHomeNames.remove(player);
             pendingAdminHomes.remove(player);
             return;
         }
+        // ---------------------------------
 
         File dataFolder = new File(plugin.getDataFolder(), "data");
         if (!dataFolder.exists()) dataFolder.mkdirs();
@@ -842,7 +856,6 @@ public class Menu implements Listener {
 
         if (playerConfig.contains(homeName)) {
             player.sendMessage(ChatColor.translateAlternateColorCodes('&', config.getString("messages.home-exists")));
-            // 👇 Se elimina del mapa para que el próximo mensaje sea normal
             pendingHomeNames.remove(player);
             pendingAdminHomes.remove(player);
             event.setCancelled(true);

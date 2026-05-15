@@ -2,7 +2,7 @@
 #     SetHome GUI        #
 ##########################
 # Author: Beeted_
-# Version: 2.1.4
+# Version: 2.1.5
 
 # For support: https://discord.gg/3k4MbQ3KNv
 # Premium plugin (Support me): https://builtbybit.com/resources/sethome-gui.51982
@@ -13,7 +13,6 @@ config-version: 1
 # Customize the menu.
 menu:
   #It is recommended not to change the command for proper operation.
-  open-command: /home
   gui-title: "&8Home Menu ⌂"
   # Replace with AIR to disable.
   glass-pane-color: "GRAY"
@@ -183,11 +182,15 @@ action-bar:
     message: "&a¡Teleported!"
     duration-ticks: 40 # (20 ticks = 1 sec)
 
+# This option may cause errors in commands and mostly affects Bedrock players.
+# It is recommended to keep it set to "false" and use homes without spaces.
+# Recommended regex for whitespaces: "^[a-zA-Z0-9 _-]+$"
+enable-whitespace: false
 home-name-regex: "^[a-zA-Z0-9_-]+$"
 
 blacklisted-worlds:
-  - world_nether
-  - world_the_end
+  - example_world_1
+  - example_world_2
 
 teleport-cooldown: 5
 cancel-on-move: true
