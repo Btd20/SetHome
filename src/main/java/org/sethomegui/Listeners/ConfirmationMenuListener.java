@@ -86,7 +86,7 @@ public class ConfirmationMenuListener implements Listener {
 
                 try {
                     playerFile.save();
-                    String deleteMsg = plugin.getMainConfig().getString("messages.home-deleted",
+                    String deleteMsg = plugin.getMainConfig().getString("messages.home-action-messages.home-deleted",
                             "&#ef6603[SetHomeGUI] &#f9a805Home &f%name% &#f9a805has been successfully deleted.");
                     player.sendMessage(Utils.setPlaceholders(player, deleteMsg.replace("%name%", homeName), plugin));
                 } catch (IOException e) {

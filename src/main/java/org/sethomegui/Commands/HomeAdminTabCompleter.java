@@ -27,6 +27,7 @@ public class HomeAdminTabCompleter implements TabCompleter {
             subCommands.add("gui");
             subCommands.add("import");
             subCommands.add("reload");
+            subCommands.add("version");
 
             StringUtil.copyPartialMatches(args[0], subCommands, completions);
             Collections.sort(completions);

@@ -53,7 +53,6 @@ messages:
     world-blacklisted: "&#ef6603[SetHomeGUI] &cYou cannot set a home in the world &f%world%&#ef6603!"
     blacklisted-name: "&#ef6603[SetHomeGUI] &cError: The home name contains a blacklisted word!"
   home-action-messages:
-    home-teleport: "&#ef6603[SetHomeGUI] &#f9a805Teleported successfully to &f%name%&#f9a805!"
     home-deleted: "&#ef6603[SetHomeGUI] &#f9a805Home &f%name% &#f9a805has been successfully deleted."
     home-not-found: "&#ef6603[SetHomeGUI] &cError: You do not have a home named &f%name%&c."
     file-deletion-error: "&#ef6603[SetHomeGUI] &cAn error occurred while deleting the file."
@@ -84,3 +83,9 @@ messages:
   system-errors:
     save-error: "Could not save home data for UUID %uuid%"
     load-error: "Could not load or create data file for user: %uuid%"
+  plugin-version:
+    - "&7&m                                          "
+    - "&7Plugin name: &#ef6603SetHomeGUI (Free)"
+    - "&7Created by: &#ef6603Beeted_"
+    - "&7Version: &#ef6603%version%"
+    - "&7&m                                          "

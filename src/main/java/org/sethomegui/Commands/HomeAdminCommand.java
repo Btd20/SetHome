@@ -9,6 +9,8 @@ import org.sethomegui.SetHomeGUI;
 import org.sethomegui.Importers.HomeImporter;
 import org.sethomegui.Utils.Utils;
 
+import java.util.List;
+
 public class HomeAdminCommand implements CommandExecutor {
 
     private final SetHomeGUI plugin;
@@ -36,12 +38,28 @@ public class HomeAdminCommand implements CommandExecutor {
             if (sender instanceof Player) {
                 Utils.sendUsage((Player) sender, "homeadmin gui", plugin);
             } else {
-                sender.sendMessage(Utils.color("&cUsage: /homeadmin <gui|import|reload>"));
+                sender.sendMessage(Utils.color("&cUsage: /homeadmin <gui|import|reload|version>"));
             }
             return true;
         }
 
-        // 3. SUBCOMANDO: RELOAD
+        // 3. SUBCOMANDO: VERSION
+        if (args[0].equalsIgnoreCase("version")) {
+            List<String> versionLines = plugin.getMainConfig().getStringList("messages.plugin-version");
+            String currentVersion = plugin.getPluginMeta().getVersion(); // Obtiene la versión nativa del plugin.yml
+
+            if (versionLines != null && !versionLines.isEmpty()) {
+                for (String line : versionLines) {
+                    sender.sendMessage(Utils.color(line.replace("%version%", currentVersion)));
+                }
+            } else {
+                // Fallback por si la lista no existe o está vacía en la config
+                sender.sendMessage(Utils.color("&7Plugin: &#ef6603SetHomeGUI &7| Version: &#ef6603" + currentVersion));
+            }
+            return true;
+        }
+
+        // 4. SUBCOMANDO: RELOAD
         if (args[0].equalsIgnoreCase("reload")) {
             // Se ejecuta de forma asíncrona para leer de disco de manera segura
             Bukkit.getAsyncScheduler().runNow(plugin, (task) -> {
@@ -71,7 +89,7 @@ public class HomeAdminCommand implements CommandExecutor {
             return true;
         }
 
-        // 4. SUBCOMANDO: IMPORT
+        // 5. SUBCOMANDO: IMPORT
         if (args[0].equalsIgnoreCase("import")) {
             if (args.length < 2) {
                 String importUsage = plugin.getMainConfig().getString("messages.admin.import-usage", "&#ef6603[SetHomeGUI] &cUsage: /homeadmin import <Essentials|HuskHomes>");
@@ -97,7 +115,7 @@ public class HomeAdminCommand implements CommandExecutor {
             return true;
         }
 
-        // 5. SUBCOMANDO: GUI
+        // 6. SUBCOMANDO: GUI
         if (args[0].equalsIgnoreCase("gui")) {
             if (!(sender instanceof Player)) {
                 String onlyPlayersMsg = plugin.getMainConfig().getString(

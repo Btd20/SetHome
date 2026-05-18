@@ -24,7 +24,7 @@ public class GlobalPlaceholders extends PlaceholderExpansion {
 
     @Override
     @NotNull
-    public String getVersion() { return "3.0"; }
+    public String getVersion() { return "3.0.1"; }
 
     @Override
     public boolean persist() { return true; }
