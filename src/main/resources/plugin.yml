@@ -1,0 +1,37 @@
+name: SetHomeGUI
+version: '3.0'
+main: org.sethomegui.SetHomeGUI
+api-version: '1.21'
+load: STARTUP
+authors: [ Beeted_ ]
+description: Have your users establish a home and teleport to it.
+
+folia-supported: true
+
+softdepend:
+  - PlaceholderAPI
+
+commands:
+  home:
+    description: Main command for SetHome GUI.
+    aliases: [homes]
+  sethome:
+    description: Creates or triggers the process to set a home.
+    usage: /<command> [name]
+  delhome:
+    description: Opens the confirmation menu to delete a specific home.
+    usage: /<command> <home_name>
+  homeadmin:
+    description: Main administrative command.
+    permission: sethome.admin
+
+permissions:
+  sethome.admin:
+    description: Administrative permission to bypass limits or manage plugin reloads.
+    default: op
+  sethome.maxhomes.*:
+    description: Wildcard permission for home limits.
+    default: false
+  sethome.cooldown.bypass:
+    description: Allows players to teleport instantly without triggering the countdown.
+    default: op

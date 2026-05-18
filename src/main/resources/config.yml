@@ -1,0 +1,86 @@
+#   /$$$$$$              /$$     /$$   /$$                                    /$$$$$$  /$$   /$$ /$$$$$$
+#  /$$__  $$            | $$    | $$  | $$                                   /$$__  $$| $$  | $$|_  $$_/
+# | $$  \__/  /$$$$$$  /$$$$$$  | $$  | $$  /$$$$$$  /$$$$$$/$$$$   /$$$$$$ | $$  \__/| $$  | $$  | $$
+# |  $$$$$$  /$$__  $$|_  $$_/  | $$$$$$$$ /$$__  $$| $$_  $$_  $$ /$$__  $$| $$ /$$$$| $$  | $$  | $$
+#  \____  $$| $$$$$$$$  | $$    | $$__  $$| $$  \ $$| $$ \ $$ \ $$| $$$$$$$$| $$|_  $$| $$  | $$  | $$
+#  /$$  \ $$| $$_____/  | $$ /$$| $$  | $$| $$  | $$| $$ | $$ | $$| $$_____/| $$  \ $$| $$  | $$  | $$
+# |  $$$$$$/|  $$$$$$$  |  $$$$/| $$  | $$|  $$$$$$/| $$ | $$ | $$|  $$$$$$$|  $$$$$$/|  $$$$$$/ /$$$$$$
+# \______/  \_______/   \___/  |__/  |__/ \______/ |__/ |__/ |__/ \_______/ \______/  \______/ |______/
+#                   Author: Beeted_
+#                   Version: 3.0
+
+# For support: https://discord.gg/3k4MbQ3KNv
+# If you liked the plugin, I would greatly appreciate a review on the page :)
+
+# Default permission config
+requires-default-permission: false
+default-permission: "sethome.use"
+
+# Regular expression to validate home names.
+# By default: Allows letters (A-Z, a-z), numbers (0-9), and spaces (\s). Minimum 1 character, maximum 32.
+name-regex: "^[A-Za-z0-9\\s]{1,32}$"
+
+# Default max homes config.
+# Set to -1 for unlimited homes.
+default-max-homes: 3
+
+# Teleporting config.
+teleport-cooldown: 5
+cancel-on-move: true
+
+# List of disabled worlds.
+blacklisted-worlds:
+  - example_world1
+  - example_world2
+
+# List of disabled words.
+blacklisted-words:
+  - exampleword1
+  - exampleword2
+
+# Main plugin messages.
+messages:
+  only-players: "&#ef6603[SetHomeGUI] &cError: Only players can execute this command."
+  invalid-usage: "&#ef6603[SetHomeGUI] &#f9a805Usage: &f%usage%"
+  home-creation-messages:
+    no-permission: "&#ef6603[SetHomeGUI] &cYou do not have permission to use this command."
+    name-prompt: "&#ef6603[SetHomeGUI] &#f9a805Please type the name for your home in the chat... Or type &f%cancel_word% &#f9a805to exit."
+    home-saved: "&#ef6603[SetHomeGUI] &#f9a805Home &f%name% &#f9a805has been successfully saved!"
+    invalid-name: "&#ef6603[SetHomeGUI] &cInvalid name! &#f9a805Please avoid using spaces, dots, or slashes. Try again or type &f%cancel_word% &#f9a805to exit."
+    cancel-word: "cancel"
+    creation-cancelled: "&#ef6603[SetHomeGUI] &#f9a805Home creation process has been &#ef6603cancelled&f."
+    limit-reached: "&#ef6603[SetHomeGUI] &cYou have reached your maximum limit of &f%max% &chomes!"
+    world-blacklisted: "&#ef6603[SetHomeGUI] &cYou cannot set a home in the world &f%world%&#ef6603!"
+    blacklisted-name: "&#ef6603[SetHomeGUI] &cError: The home name contains a blacklisted word!"
+  home-action-messages:
+    home-teleport: "&#ef6603[SetHomeGUI] &#f9a805Teleported successfully to &f%name%&#f9a805!"
+    home-deleted: "&#ef6603[SetHomeGUI] &#f9a805Home &f%name% &#f9a805has been successfully deleted."
+    home-not-found: "&#ef6603[SetHomeGUI] &cError: You do not have a home named &f%name%&c."
+    file-deletion-error: "&#ef6603[SetHomeGUI] &cAn error occurred while deleting the file."
+    world-not-loaded: "&#ef6603[SetHomeGUI] &cError: Destination world '%world%' is not loaded."
+    teleport-cancelled-move: "&#ef6603[SetHomeGUI] &cTeleportation cancelled because you moved!"
+  admin:
+    teleport-success: "&#ef6603[SetHomeGUI] &#f9a805Teleported successfully to &f%home%&f's &#f9a805home as admin!"
+    world-not-found: "&#ef6603[SetHomeGUI] &cWorld is not loaded or does not exist."
+    location-not-found: "&#ef6603[SetHomeGUI] &cCould not find location data for &f%home%&c."
+    no-homes-found: "&#ef6603[SetHomeGUI] &cThis player does not have any homes configurations."
+    read-error: "&#ef6603[SetHomeGUI] &cError reading home location data."
+    player-record-error: "&#ef6603[SetHomeGUI] &cError processing player record."
+    no-permission: "&#ef6603[SetHomeGUI] &cYou do not have permission to execute this command."
+    delete-success: "&#ef6603[SetHomeGUI] &#f9a805Safely deleted home &f%home% &#f9a805from the player's records."
+    database-error: "&#ef6603[SetHomeGUI] &cError modifying the database file."
+    search-prompt:
+      - ""
+      - "&#ef6603🔍 &lPLAYER SEARCH MODE"
+      - "&7Type the username or a part of it in the chat."
+      - "&7Type &f'all' &7or &f'cancel' &7to reset or exit."
+      - ""
+    search-cancelled: "&#ef6603[SetHomeGUI] &cSearch cancelled. Reopening menu..."
+    search-reset: "&#ef6603[SetHomeGUI] &#f9a805Search reset. Listing all records..."
+    search-filter-applied: "&#ef6603[SetHomeGUI] &#f9a805Filter applied: &f%query%"
+    import-usage: "&#ef6603[SetHomeGUI] &cUsage: /homeadmin import <Essentials|HuskHomes>"
+    import-started: "&#ef6603[SetHomeGUI] &#f9a805Starting data import process asynchronously..."
+    reload-success: "&#ef6603[SetHomeGUI] &aAll configurations (config, actions, guis) successfully reloaded!"
+  system-errors:
+    save-error: "Could not save home data for UUID %uuid%"
+    load-error: "Could not load or create data file for user: %uuid%"

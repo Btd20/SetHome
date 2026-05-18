@@ -1,0 +1,28 @@
+teleport-actions:
+  title:
+    enabled: true
+    type: COOLDOWN # Values: COOLDOWN, STATIC
+    title: '&#ef6603&lTELEPORTING'
+    subtitle: '&fPlease wait %seconds%s...'
+  actionbar:
+    enabled: true
+    type: STATIC # Values: COOLDOWN, STATIC
+    message: '&#f9a805⚠ &fDon''t move! Teleporting shortly... &#f9a805⚠'
+  message:
+    enabled: true
+    type: STATIC # Values: COOLDOWN, STATIC
+    message: '&#ef6603[SetHomeGUI] &#f9a805Teleportation process started. Preparing portal...'
+
+teleported-actions:
+  title:
+    enabled: true
+    title: '&#a8ff24&lTELEPORTED!'
+    subtitle: '&7Destination reached safely.'
+    duration: 2 # In seconds
+  actionbar:
+    enabled: true
+    message: '&#a8ff24✔ &fEnjoy your new location!'
+    duration: 2 # In seconds
+  message:
+    enabled: true
+    message: '&#ef6603[SetHomeGUI] &#a8ff24Successfully teleported!'

@@ -1,0 +1,219 @@
+gui:
+  main-gui:
+    title: "&8SetHome GUI &7- Menu"
+    size: 27
+    click-sound: UI_BUTTON_CLICK
+    items:
+      set-home: # Do not touch this id.
+        type: RED_BED
+        slot: 11
+        display-name: "&#f9a805Set Home &#ef6603✎"
+        lore:
+          - "&8Create a new spawn point here."
+          - ""
+          - "&8▸ &#ef6603Current homes: &7%sethome_current%/%sethome_max%"
+          - ""
+          - "&f[▶] &#f9a805Click to set here."
+      my-homes: # Do not touch this id.
+        type: BOOK
+        slot: 15
+        display-name: "&#f9a805My Homes &#ef6603☰"
+        lore:
+          - "&8View and teleport to your homes."
+          - ""
+          - "&f[▶] &#f9a805Click to open the list."
+      center-separator:
+        display-name: ""
+        type: GRAY_STAINED_GLASS_PANE
+        slot: 13
+      decoration-frames:
+        display-name: ""
+        type: BLACK_STAINED_GLASS_PANE
+        slots: [0,1,2,3,4,5,6,7,8,9,17,18,19,20,21,22,23,24,25,26]
+      decoration-panels:
+        display-name: ""
+        type: GRAY_STAINED_GLASS_PANE
+        slots: [10,12,14,16]
+
+  homes-gui: # Paginated menu listing the player's homes
+    title: "&8My Homes (%page%/%max_page%)"
+    size: 54
+    click-sound: UI_BUTTON_CLICK
+    # Slots that will be replaced by home items.
+    home-slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+    items:
+      home-item: # Do not touch this id.
+        type: CYAN_BED
+        display-name: "&#ef6603Home: &#f9a805%home_name%"
+        lore:
+          - "&8Destination Info:"
+          - "&8▸ World: &7%home_world%"
+          - "&8▸ X: &7%home_x% &8| Y: &7%home_y% &8| Z: &7%home_z%"
+          - ""
+          - "&#f9a805[▶] Left-Click to Teleport."
+          - "&c[◀] Right-Click to Delete."
+      previous-page: # Do not touch this id.
+        type: HEAD
+        slot: 45
+        value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWExZWYzOThhMTdmMWFmNzQ3NzAxNDUxN2Y3ZjE0MWQ4ODZkZjQxYTMyYzczOGNjOGE4M2ZiNTAyOTdiZDkyMSJ9fX0="
+        display-name: "&#ef6603◀ &#f9a805Previous Page"
+        action: previous_page
+      next-page: # Do not touch this id.
+        type: HEAD
+        slot: 53
+        value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYWM5YzY3YTlmMTY4NWNkMWRhNDNlODQxZmU3ZWJiMTdmNmFmNmVhMTJhN2UxZjI3MjJmNWU3ZjA4OThkYjlmMyJ9fX0="
+        display-name: "&#f9a805Next Page &#ef6603▶"
+        action: next_page
+      back: # Do not touch this id.
+        type: BARRIER
+        slot: 49
+        display-name: "&c✖ Go Back"
+        action: back
+      decoration-top-bottom: # Dark top and bottom borders
+        display-name: ""
+        type: BLACK_STAINED_GLASS_PANE
+        slots: [0,1,2,3,4,5,6,7,8,46,47,48,50,51,52]
+      decoration-sides: # Gray side frames framing the homes area
+        display-name: ""
+        type: GRAY_STAINED_GLASS_PANE
+        slots: [9,17,18,26,27,35,36,44]
+
+  confirmation-gui: # Menu to confirm home deletion.
+    title: "&8Confirm Deletion (%home_name%)"
+    size: 27
+    click-sound: UI_BUTTON_CLICK
+    items:
+      confirm-button: # Do not touch this id.
+        type: GREEN_STAINED_GLASS_PANE
+        slots: [ 10, 11, 12 ]
+        display-name: "&a&lCONFIRM &#f9a805✔"
+        lore:
+          - "&7Click here to permanently"
+          - "&7delete this home configuration."
+      cancel-button: # Do not touch this id.
+        type: RED_STAINED_GLASS_PANE
+        slots: [ 14, 15, 16 ]
+        display-name: "&c&lCANCEL &#ef6603✖"
+        lore:
+          - "&7Click here to abort and"
+          - "&7return safely to your homes list."
+      info-item:
+        type: BARRIER
+        slot: 13
+        display-name: "&#ef6603Warning! &#f9a805⚠"
+        lore:
+          - "&7You are about to delete:"
+          - "  &8▸ &f%home_name%"
+          - ""
+          - "&#f9a805Do you want to proceed?"
+      decoration:
+        type: BLACK_STAINED_GLASS_PANE
+        slots: [ 0,1,2,3,4,5,6,7,8,9,17,18,19,20,21,22,23,24,25,26 ]
+        display-name: ""
+
+  admin-gui: # Main administrator menu listing all players.
+    title: "&8Admin Manager &8(%page%/%max_page%)"
+    size: 54
+    click-sound: UI_BUTTON_CLICK
+    unknown-player-name: "&7Unknown"
+    slots: [ 10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43 ]
+    items:
+      player-head: # Do not touch this id.
+        display-name: "&#ef6603User: &#f9a805%player_name%"
+        lore:
+          - "&7Information Profile:"
+          - " &8▸ UUID: &7%player_uuid%"
+          - " &8▸ Homes: &7%current_homes%"
+          - ""
+          - "&#f9a805[▶] Click to open their homes."
+      search-button: # Do not touch this id.
+        type: OAK_SIGN
+        slot: 49
+        display-name: "&#f9a805🔍 &e&lSearch Player"
+        lore:
+          - "&7Click to filter players"
+          - "&7by their nickname."
+      previous-page: # Do not touch this id.
+        type: HEAD
+        slot: 45
+        value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWExZWYzOThhMTdmMWFmNzQ3NzAxNDUxN2Y3ZjE0MWQ4ODZkZjQxYTMyYzczOGNjOGE4M2ZiNTAyOTdiZDkyMSJ9fX0="
+        display-name: "&#ef6603◀ &#f9a805Previous Page"
+      next-page: # Do not touch this id.
+        type: HEAD
+        slot: 53
+        value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYWM5YzY3YTlmMTY4NWNkMWRhNDNlODQxZmU3ZWJiMTdmNmFmNmVhMTJhN2UxZjI3MjJmNWU3ZjA4OThkYjlmMyJ9fX0="
+        display-name: "&#f9a805Next Page &#ef6603▶"
+      decoration:
+        type: BLACK_STAINED_GLASS_PANE
+        slots: [ 0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,44,46,47,48,50,51,52 ]
+        display-name: ""
+
+    admin-player-homes-gui: # Player home menu from admin view.
+      title: "&8Homes of %player% &8(%page%/%max_page%)"
+      size: 54
+      click-sound: UI_BUTTON_CLICK
+      home-slots: [ 10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43 ]
+      items:
+        home-item: # Do not touch this id.
+          type: CYAN_BED
+          display-name: "&#ef6603Home: &#f9a805%home_name%"
+          lore:
+            - "&8Destination Info:"
+            - "&8▸ World: &7%home_world%"
+            - "&8▸ X: &7%home_x% &8| Y: &7%home_y% &8| Z: &7%home_z%"
+            - ""
+            - "&#f9a805[▶] Left-Click to Teleport as Admin."
+            - "&c[◀] Right-Click to Delete Forcefully."
+        previous-page: # Do not touch this id.
+          type: HEAD
+          slot: 45
+          value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWExZWYzOThhMTdmMWFmNzQ3NzAxNDUxN2Y3ZjE0MWQ4ODZkZjQxYTMyYzczOGNjOGE4M2ZiNTAyOTdiZDkyMSJ9fX0="
+          display-name: "&#ef6603◀ &#f9a805Previous Page"
+        next-page: # Do not touch this id.
+          type: HEAD
+          slot: 53
+          value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYWM5YzY3YTlmMTY4NWNkMWRhNDNlODQxZmU3ZWJiMTdmNmFmNmVhMTJhN2UxZjI3MjJmNWU3ZjA4OThkYjlmMyJ9fX0="
+          display-name: "&#f9a805Next Page &#ef6603▶"
+        back: # Do not touch this id.
+          type: BARRIER
+          slot: 49
+          display-name: "&c✖ Go Back"
+        decoration-top-bottom:
+          display-name: ""
+          type: BLACK_STAINED_GLASS_PANE
+          slots: [ 0,1,2,3,4,5,6,7,8,46,47,48,50,51,52 ]
+        decoration-sides:
+          display-name: ""
+          type: GRAY_STAINED_GLASS_PANE
+          slots: [ 9,17,18,26,27,35,36,44 ]
+
+    admin-confirmation-gui: # Home deletion confirmation menu for a player from administrator view.
+      title: "&8Admin Confirm Delete (%home_name%)"
+      size: 27
+      click-sound: UI_BUTTON_CLICK
+      items:
+        confirm-button: # Do not touch this id.
+          type: GREEN_STAINED_GLASS_PANE
+          slots: [ 10, 11, 12 ]
+          display-name: "&a&lCONFIRM DELETE &#f9a805✔"
+          lore:
+            - "&7Click here to bypass restrictions"
+            - "&7and wipe this location."
+        cancel-button: # Do not touch this id.
+          type: RED_STAINED_GLASS_PANE
+          slots: [ 14, 15, 16 ]
+          display-name: "&c&lCANCEL ACTION &#ef6603✖"
+          lore:
+            - "&7Abort execution and go back"
+            - "&7to the audited home repository."
+        info-item:
+          type: BARRIER
+          slot: 13
+          display-name: "&#ef6603Administrative Override! &#f9a805⚠"
+          lore:
+            - "&7Target Registry to Purge:"
+            - "  &8▸ &f%home_name%"
+        decoration:
+          type: BLACK_STAINED_GLASS_PANE
+          slots: [ 0,1,2,3,4,5,6,7,8,9,17,18,19,20,21,22,23,24,25,26 ]
+          display-name: ""
