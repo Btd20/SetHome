@@ -5,13 +5,18 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
+import dev.dejvokep.boostedyaml.block.implementation.Section;
 import me.clip.placeholderapi.PlaceholderAPI;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.profile.PlayerProfile;
 import org.bukkit.profile.PlayerTextures;
 import org.sethomegui.SetHomeGUI;
@@ -19,6 +24,8 @@ import org.sethomegui.SetHomeGUI;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Base64;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -34,7 +41,15 @@ public class Utils {
     public static String color(String message) {
         if (message == null || message.isEmpty()) return "";
 
-        // El patrón HEX_PATTERN ya detecta &#([A-Fa-f0-9]{6}) o #([A-Fa-f0-9]{6})
+        // 1. SOPORTE DE GRADIENTES (MINIMESSAGE)
+        // Si detectamos los caracteres '<' y '>', procesamos los gradientes primero.
+        if (message.contains("<") && message.contains(">")) {
+            Component component = MiniMessage.miniMessage().deserialize(message);
+            // Lo serializamos a formato legacy usando el ampersand (&)
+            message = LegacyComponentSerializer.legacyAmpersand().serialize(component);
+        }
+
+        // 2. TU LÓGICA DE DETECCIÓN HEXADECIMAL TRADICIONAL (&#rrggbb o #rrggbb)
         Matcher matcher = HEX_PATTERN.matcher(message);
         StringBuffer buffer = new StringBuffer();
 
@@ -47,7 +62,7 @@ public class Utils {
         }
         matcher.appendTail(buffer);
 
-        // Finalmente traducimos los códigos legacy (&a, &l, etc.)
+        // 3. TRADUCCIÓN FINAL DE CÓDIGOS LEGACY (&a, &l, etc.)
         return ChatColor.translateAlternateColorCodes('&', buffer.toString());
     }
 
@@ -179,6 +194,64 @@ public class Utils {
             head.setItemMeta(meta);
         }
         return head;
+    }
+
+    /**
+     * Resuelve qué acción representa el ítem pulsado SIN depender de posiciones fijas.
+     *
+     * Primero lee la llave inyectada en el PersistentDataContainer del propio ítem (que siempre
+     * viaja con él aunque el administrador lo mueva de slot en gui.yml) y, si no existe, busca en
+     * la configuración qué ítem ocupa realmente ese slot (soportando tanto 'slot' como 'slots').
+     *
+     * @return la acción normalizada (minúsculas y guiones bajos) o null si el ítem no tiene lógica.
+     */
+    public static String resolveMenuAction(SetHomeGUI plugin, ItemStack clickedItem, Section menuSection, int clickedSlot) {
+        String raw = null;
+
+        if (clickedItem != null && clickedItem.hasItemMeta()) {
+            raw = clickedItem.getItemMeta().getPersistentDataContainer()
+                    .get(plugin.getActionKey(), PersistentDataType.STRING);
+        }
+
+        if (raw == null && menuSection != null) {
+            raw = findActionBySlot(menuSection.getSection("items"), clickedSlot);
+        }
+
+        return normalizeAction(raw);
+    }
+
+    /**
+     * Recorre la sección 'items' del menú y devuelve la acción del ítem que ocupa el slot pulsado.
+     */
+    private static String findActionBySlot(Section itemsSection, int clickedSlot) {
+        if (itemsSection == null) return null;
+
+        for (Object keyObj : itemsSection.getKeys()) {
+            String key = String.valueOf(keyObj);
+            Section itemData = itemsSection.getSection(key);
+            if (itemData == null) continue;
+
+            if (itemData.contains("slot") && itemData.getInt("slot") == clickedSlot) {
+                return itemData.getString("action", key);
+            }
+
+            if (itemData.contains("slots")) {
+                List<Integer> slots = itemData.getIntList("slots");
+                if (slots != null && slots.contains(clickedSlot)) {
+                    return itemData.getString("action", key);
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Estandariza una acción para que 'my-homes', 'My Homes' y 'my_homes' sean equivalentes.
+     */
+    public static String normalizeAction(String raw) {
+        if (raw == null) return null;
+        String normalized = raw.toLowerCase(Locale.ROOT).trim().replace("-", "_").replace(" ", "_");
+        return normalized.isEmpty() ? null : normalized;
     }
 
     /**

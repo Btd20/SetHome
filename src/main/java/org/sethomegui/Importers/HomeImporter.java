@@ -7,6 +7,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import dev.dejvokep.boostedyaml.YamlDocument;
 import org.sethomegui.SetHomeGUI;
 
 import java.io.File;
@@ -16,6 +17,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class HomeImporter {
     private final ConsoleCommandSender console = Bukkit.getConsoleSender();
@@ -27,7 +29,6 @@ public class HomeImporter {
 
     public void importHomesFromEssentialsForAllPlayers(CommandSender sender) {
         File essentialsDir = new File(plugin.getDataFolder().getParentFile(), "Essentials/userdata");
-        File pluginDataDir = new File(plugin.getDataFolder(), "data");
 
         if (!essentialsDir.exists() || !essentialsDir.isDirectory()) {
             String message = "Essentials userdata directory not found: " + essentialsDir.getAbsolutePath();
@@ -56,13 +57,11 @@ public class HomeImporter {
                 }
 
                 String uuidString = essentialsPlayerFile.getName().replace(".yml", "");
-                File pluginPlayerFile = new File(pluginDataDir, uuidString + ".yml");
-                if (!pluginPlayerFile.exists()) {
-                    pluginPlayerFile.getParentFile().mkdirs();
-                    pluginPlayerFile.createNewFile();
-                }
 
-                FileConfiguration pluginConfig = YamlConfiguration.loadConfiguration(pluginPlayerFile);
+                // Escribimos a traves del backend activo para que la importacion
+                // acabe en MySQL cuando este configurado, no solo en archivos locales.
+                YamlDocument pluginConfig = plugin.getHomeManager().getPlayerFile(UUID.fromString(uuidString));
+                if (pluginConfig == null) continue;
 
                 List<String> homeList = pluginConfig.getStringList("homes");
                 if (homeList == null) {
@@ -89,7 +88,7 @@ public class HomeImporter {
 
                 if (modified) {
                     pluginConfig.set("homes", homeList);
-                    pluginConfig.save(pluginPlayerFile);
+                    pluginConfig.save();
                     sender.sendMessage(ChatColor.GRAY + "Successfully imported homes for UUID: " + uuidString);
                 }
             } catch (Exception e) {
@@ -104,7 +103,6 @@ public class HomeImporter {
 
     public void importHomesFromHuskHomesForAllPlayers(CommandSender sender, String huskHomesDbPath) {
         File huskHomesDbFile = new File(plugin.getDataFolder().getParentFile(), huskHomesDbPath);
-        File pluginDataDir = new File(plugin.getDataFolder(), "data");
 
         if (!huskHomesDbFile.exists()) {
             String message = "HuskHomes database file not found: " + huskHomesDbFile.getAbsolutePath();
@@ -134,14 +132,9 @@ public class HomeImporter {
                     float pitch = resultSet.getFloat("pitch");
                     String worldName = resultSet.getString("world_name");
 
-                    File playerFile = new File(pluginDataDir, ownerUUID + ".yml");
-
-                    if (!playerFile.exists()) {
-                        playerFile.getParentFile().mkdirs();
-                        playerFile.createNewFile();
-                    }
-
-                    FileConfiguration playerConfig = YamlConfiguration.loadConfiguration(playerFile);
+                    // Escribimos a traves del backend activo (YAML o MySQL)
+                    YamlDocument playerConfig = plugin.getHomeManager().getPlayerFile(UUID.fromString(ownerUUID));
+                    if (playerConfig == null) continue;
 
                     List<String> homeList = playerConfig.getStringList("homes");
                     if (homeList == null) {
@@ -156,10 +149,10 @@ public class HomeImporter {
                         playerConfig.set(homeName + ".x", x);
                         playerConfig.set(homeName + ".y", y);
                         playerConfig.set(homeName + ".z", z);
-                        playerConfig.set(homeName + ".yaw", yaw);
-                        playerConfig.set(homeName + ".pitch", pitch);
+                        playerConfig.set(homeName + ".yaw", (double) yaw);
+                        playerConfig.set(homeName + ".pitch", (double) pitch);
 
-                        playerConfig.save(playerFile);
+                        playerConfig.save();
                     }
                 }
             }

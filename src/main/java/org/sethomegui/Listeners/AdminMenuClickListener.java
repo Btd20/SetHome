@@ -44,6 +44,9 @@ public class AdminMenuClickListener implements Listener {
 
         event.setCancelled(true); // Cancela el movimiento de los ítems del panel
 
+        // Solo procesamos clicks dentro del panel: el inventario del jugador reutiliza la misma numeración de slots
+        if (event.getRawSlot() < 0 || event.getRawSlot() >= event.getView().getTopInventory().getSize()) return;
+
         ItemStack clicked = event.getCurrentItem();
         int slot = event.getSlot();
         if (clicked == null || clicked.getType() == Material.AIR || !clicked.hasItemMeta()) return;
@@ -81,9 +84,13 @@ public class AdminMenuClickListener implements Listener {
                     return;
             }
 
-            // Filtrado por ranuras de cabezas especificadas en su YAML
+            // Identificamos la cabeza por su acción inyectada en el PDC y, como respaldo,
+            // por las ranuras declaradas en el YAML (nunca por posiciones fijas en el código)
             Section mainSection = plugin.getGuisConfig().getSection("gui.admin-gui");
-            if (mainSection != null && mainSection.getIntList("slots").contains(slot)) {
+            boolean isPlayerHead = action.equals("open_player")
+                    || (mainSection != null && mainSection.getIntList("slots").contains(slot));
+
+            if (isPlayerHead) {
                 String uuidStr = null;
 
                 if (clicked.getItemMeta().hasLore()) {
@@ -142,9 +149,10 @@ public class AdminMenuClickListener implements Listener {
                         admin.playSound(admin.getLocation(), org.bukkit.Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.0f);
                         admin.closeInventory();
 
-                        File playerFile = new File(plugin.getDataFolder() + "/data", targetUuid.toString() + ".yml");
                         try {
-                            dev.dejvokep.boostedyaml.YamlDocument targetData = dev.dejvokep.boostedyaml.YamlDocument.create(playerFile);
+                            // Leemos a traves del backend activo (YAML o MySQL), no del disco
+                            dev.dejvokep.boostedyaml.YamlDocument targetData = plugin.getHomeManager().getPlayerFile(targetUuid);
+                            if (targetData == null) return;
                             Section hData = targetData.getSection(homeName);
                             if (hData != null) {
                                 org.bukkit.World world = Bukkit.getWorld(hData.getString("world", "world"));
@@ -184,9 +192,10 @@ public class AdminMenuClickListener implements Listener {
 
             if (action.equals("confirm_wipe")) {
                 admin.playSound(admin.getLocation(), org.bukkit.Sound.ENTITY_ITEM_BREAK, 1.0f, 1.0f);
-                File playerFile = new File(plugin.getDataFolder() + "/data", targetUuid.toString() + ".yml");
                 try {
-                    dev.dejvokep.boostedyaml.YamlDocument targetData = dev.dejvokep.boostedyaml.YamlDocument.create(playerFile);
+                    // El borrado viaja al backend activo (YAML o MySQL) al llamar a save()
+                    dev.dejvokep.boostedyaml.YamlDocument targetData = plugin.getHomeManager().getPlayerFile(targetUuid);
+                    if (targetData == null) return;
                     targetData.set(homeName, null);
 
                     List<String> homeNames = targetData.getStringList("homes");

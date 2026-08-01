@@ -6,7 +6,7 @@
 
     <groupId>org.sethomegui</groupId>
     <artifactId>SetHome_GUI</artifactId>
-    <version>3.0.1</version>
+    <version>3.0.4</version>
     <packaging>jar</packaging>
 
     <name>SetHome_GUI</name>
@@ -33,11 +33,48 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.5.1</version>
                 <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <filters>
+                        <!-- Las firmas digitales de los drivers invalidan el jar sombreado -->
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                                <exclude>META-INF/maven/**</exclude>
+                                <exclude>module-info.class</exclude>
+                                <exclude>META-INF/versions/*/module-info.class</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                     <relocations>
                         <relocation>
                             <pattern>dev.dejvokep.boostedyaml</pattern>
                             <!-- Replace this -->
                             <shadedPattern>org.sethomegui.SetHomeGUI.libs</shadedPattern>
+                        </relocation>
+                        <!-- Backends de base de datos: reubicados para no chocar con otros plugins -->
+                        <relocation>
+                            <pattern>com.zaxxer.hikari</pattern>
+                            <shadedPattern>org.sethomegui.SetHomeGUI.libs.hikari</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.mysql</pattern>
+                            <shadedPattern>org.sethomegui.SetHomeGUI.libs.mysql</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>redis.clients</pattern>
+                            <shadedPattern>org.sethomegui.SetHomeGUI.libs.redis</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.apache.commons.pool2</pattern>
+                            <shadedPattern>org.sethomegui.SetHomeGUI.libs.pool2</shadedPattern>
+                        </relocation>
+                        <!-- Jedis arrastra org.json, un paquete muy propenso a chocar -->
+                        <relocation>
+                            <pattern>org.json</pattern>
+                            <shadedPattern>org.sethomegui.SetHomeGUI.libs.json</shadedPattern>
                         </relocation>
                     </relocations>
                 </configuration>
@@ -96,6 +133,61 @@
             <groupId>me.clip</groupId>
             <artifactId>placeholderapi</artifactId>
             <version>2.12.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- ============ BACKENDS DE BASE DE DATOS ============ -->
+
+        <!-- Pool de conexiones para MySQL / MariaDB -->
+        <dependency>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>5.1.0</version>
+            <exclusions>
+                <!-- Paper ya expone slf4j-api a los plugins -->
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Driver JDBC de MySQL (compatible tambien con MariaDB) -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <version>9.1.0</version>
+            <exclusions>
+                <!-- Solo usamos el protocolo clasico, X DevAPI no hace falta -->
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Cliente de Redis para la capa de cache y sincronizacion entre servidores -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>5.2.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.gson</groupId>
+                    <artifactId>gson</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!-- Provista por el servidor (Paper la incluye); necesaria para compilar Hikari/Jedis -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.16</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

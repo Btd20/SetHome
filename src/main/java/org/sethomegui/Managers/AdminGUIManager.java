@@ -17,12 +17,21 @@ import org.sethomegui.Utils.Utils;
 
 import java.io.File;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AdminGUIManager {
 
     private final SetHomeGUI plugin;
     private final Map<UUID, Integer> adminPage = new HashMap<>();
     private final Map<UUID, String> searchFilters = new HashMap<>();
+
+    // Estructuras thread-safe para que Folia maneje la caché sin excepciones de concurrencia
+    private final List<OfflinePlayer> cachedPlayers = new CopyOnWriteArrayList<>();
+    private final Map<UUID, String> cachedNames = new ConcurrentHashMap<>();
+    // Numero de hogares por jugador, precalculado en segundo plano: sin esto, pintar una
+    // pagina del panel lanzaria una consulta a la base de datos por cada cabeza mostrada.
+    private final Map<UUID, Integer> cachedHomeCounts = new ConcurrentHashMap<>();
 
     public final NamespacedKey actionKey;
     public final NamespacedKey targetUuidKey;
@@ -35,6 +44,71 @@ public class AdminGUIManager {
         this.targetHomeKey = new NamespacedKey(plugin, "adm_target_home");
     }
 
+    /**
+     * Carga de forma asíncrona todos los archivos del directorio de datos a la memoria RAM.
+     * Invócalo en el onEnable() de tu clase principal (SetHomeGUI.java).
+     */
+    public void loadPlayersCacheAsync() {
+        Bukkit.getAsyncScheduler().runNow(plugin, (task) -> {
+            long startTime = System.currentTimeMillis();
+
+            // Preguntamos al backend activo (archivos YAML o MySQL) en lugar de escanear el disco
+            List<OfflinePlayer> tempPlayers = new ArrayList<>();
+            for (UUID pUuid : plugin.getStorageManager().listPlayers()) {
+                OfflinePlayer op = Bukkit.getOfflinePlayer(pUuid);
+                tempPlayers.add(op);
+
+                String name = op.getName();
+                if (name != null) {
+                    cachedNames.put(pUuid, name.toLowerCase());
+                }
+            }
+
+            // Ordenación alfabética inicial en segundo plano
+            tempPlayers.sort(Comparator.comparing(op -> op.getName() != null ? op.getName() : ""));
+
+            cachedPlayers.clear();
+            cachedPlayers.addAll(tempPlayers);
+
+            cachedHomeCounts.clear();
+            cachedHomeCounts.putAll(plugin.getStorageManager().countHomesByPlayer());
+
+            plugin.getLogger().info("Loaded " + cachedPlayers.size() + " admin records into memory cache (" + (System.currentTimeMillis() - startTime) + "ms).");
+        });
+    }
+
+    /**
+     * Registra dinámicamente un jugador en la caché cuando guarda un home por primera vez.
+     */
+    public void registerPlayerInCache(OfflinePlayer player) {
+        // El recuento cambia cada vez que se crea un hogar, asi que lo refrescamos siempre
+        cachedHomeCounts.put(player.getUniqueId(), plugin.getHomeManager().getHomeCount(player.getUniqueId()));
+
+        if (!cachedPlayers.contains(player)) {
+            cachedPlayers.add(player);
+            if (player.getName() != null) {
+                cachedNames.put(player.getUniqueId(), player.getName().toLowerCase());
+            }
+            Bukkit.getAsyncScheduler().runNow(plugin, (task) -> {
+                cachedPlayers.sort(Comparator.comparing(op -> op.getName() != null ? op.getName() : ""));
+            });
+        }
+    }
+
+    /**
+     * Remueve un jugador de la caché en memoria si ya no tiene hogares guardados.
+     */
+    public void removePlayerFromCacheIfEmpty(OfflinePlayer player) {
+        int remaining = plugin.getHomeManager().getHomeCount(player.getUniqueId());
+        if (remaining <= 0) {
+            cachedPlayers.remove(player);
+            cachedNames.remove(player.getUniqueId());
+            cachedHomeCounts.remove(player.getUniqueId());
+        } else {
+            cachedHomeCounts.put(player.getUniqueId(), remaining);
+        }
+    }
+
     public void openAdminMenu(Player player) {
         UUID uuid = player.getUniqueId();
         YamlDocument config = plugin.getGuisConfig();
@@ -45,32 +119,21 @@ public class AdminGUIManager {
         int currentPage = adminPage.getOrDefault(uuid, 1);
         String filter = searchFilters.getOrDefault(uuid, "").toLowerCase();
 
-        File dataDir = new File(plugin.getDataFolder(), "data");
-        List<OfflinePlayer> registeredPlayers = new ArrayList<>();
-
-        if (dataDir.exists() && dataDir.isDirectory()) {
-            File[] files = dataDir.listFiles((dir, name) -> name.endsWith(".yml"));
-            if (files != null) {
-                for (File file : files) {
-                    try {
-                        UUID pUuid = UUID.fromString(file.getName().replace(".yml", ""));
-                        OfflinePlayer op = Bukkit.getOfflinePlayer(pUuid);
-                        String name = op.getName() != null ? op.getName() : ChatColor.stripColor(Utils.color(unknownNameConfig));
-
-                        if (!filter.isEmpty() && !name.toLowerCase().contains(filter)) continue;
-                        registeredPlayers.add(op);
-                    } catch (IllegalArgumentException ignored) {}
-                }
+        // Lectura limpia e instantánea desde la RAM
+        List<OfflinePlayer> filteredPlayers = new ArrayList<>();
+        for (OfflinePlayer op : cachedPlayers) {
+            if (!filter.isEmpty()) {
+                String name = cachedNames.get(op.getUniqueId());
+                if (name == null || !name.contains(filter)) continue;
             }
+            filteredPlayers.add(op);
         }
-
-        registeredPlayers.sort(Comparator.comparing(op -> op.getName() != null ? op.getName() : ""));
 
         List<Integer> slots = section.getIntList("slots");
         int itemsPerPage = slots.size();
         if (itemsPerPage == 0) return;
 
-        int maxPages = (int) Math.ceil((double) registeredPlayers.size() / itemsPerPage);
+        int maxPages = (int) Math.ceil((double) filteredPlayers.size() / itemsPerPage);
         if (maxPages == 0) maxPages = 1;
 
         if (currentPage > maxPages) {
@@ -84,7 +147,6 @@ public class AdminGUIManager {
 
         int size = section.getInt("size", 54);
 
-        // Optimización anti-reset de cursor: Reutilizar inventario abierto si corresponde
         Inventory gui;
         if (player.getOpenInventory().getTopInventory().getHolder() instanceof AdminMainHolder &&
                 player.getOpenInventory().getTopInventory().getSize() == size) {
@@ -138,13 +200,13 @@ public class AdminGUIManager {
         }
 
         Section headTemplate = section.getSection("items.player-head");
-        if (headTemplate != null && !registeredPlayers.isEmpty()) {
+        if (headTemplate != null && !filteredPlayers.isEmpty()) {
             int startIndex = (currentPage - 1) * itemsPerPage;
             for (int i = 0; i < itemsPerPage; i++) {
                 int globalIndex = startIndex + i;
-                if (globalIndex >= registeredPlayers.size()) break;
+                if (globalIndex >= filteredPlayers.size()) break;
 
-                OfflinePlayer target = registeredPlayers.get(globalIndex);
+                OfflinePlayer target = filteredPlayers.get(globalIndex);
                 int headSlot = slots.get(i);
 
                 ItemStack head = Utils.getPlayerHead(target.getUniqueId());
@@ -153,7 +215,12 @@ public class AdminGUIManager {
                     String pName = target.getName() != null ? target.getName() : Utils.color(unknownNameConfig);
                     meta.setDisplayName(Utils.color(headTemplate.getString("display-name", "").replace("%player_name%", pName)));
 
-                    int totalHomes = plugin.getHomeManager().getHomeCount(target.getUniqueId());
+                    // Usamos el recuento precalculado; solo consultamos al backend si falta
+                    Integer totalHomes = cachedHomeCounts.get(target.getUniqueId());
+                    if (totalHomes == null) {
+                        totalHomes = plugin.getHomeManager().getHomeCount(target.getUniqueId());
+                        cachedHomeCounts.put(target.getUniqueId(), totalHomes);
+                    }
 
                     List<String> lore = new ArrayList<>();
                     for (String line : headTemplate.getStringList("lore")) {
@@ -181,22 +248,31 @@ public class AdminGUIManager {
         Section section = plugin.getGuisConfig().getSection("gui.admin-gui.admin-player-homes-gui");
         if (section == null) return;
 
-        File playerFile = new File(plugin.getDataFolder() + "/data", targetUuid.toString() + ".yml");
-        if (!playerFile.exists()) {
-            // Leemos el mensaje desde la sección admin con un fallback seguro
-            String noHomesMsg = plugin.getMainConfig().getString(
-                    "messages.admin.no-homes-found",
-                    "&cThis player does not have any homes configurations."
-            );
+        // La lectura del backend se hace fuera del hilo del servidor: con MySQL y un jugador
+        // desconectado que aun no este en cache, hacerlo en linea congelaria la partida.
+        Bukkit.getAsyncScheduler().runNow(plugin, (loadTask) -> {
+            YamlDocument loaded = plugin.getHomeManager().getPlayerFile(targetUuid);
 
-            // Enviamos el mensaje aplicando la traducción de colores del plugin
-            admin.sendMessage(Utils.color(noHomesMsg));
-            return;
-        }
+            if (loaded == null || loaded.getStringList("homes").isEmpty()) {
+                String noHomesMsg = plugin.getMainConfig().getString(
+                        "messages.admin.no-homes-found",
+                        "&cThis player does not have any homes configurations."
+                );
+                admin.sendMessage(Utils.color(noHomesMsg));
+                return;
+            }
 
+            renderAdminPlayerHomesMenu(admin, targetUuid, page, section, loaded);
+        });
+    }
+
+    /**
+     * Pinta el menu una vez los datos ya estan en memoria.
+     */
+    private void renderAdminPlayerHomesMenu(Player admin, UUID targetUuid, int page,
+                                            Section section, YamlDocument targetData) {
         admin.getScheduler().run(plugin, (task) -> {
             try {
-                dev.dejvokep.boostedyaml.YamlDocument targetData = dev.dejvokep.boostedyaml.YamlDocument.create(playerFile);
                 List<String> homeNames = targetData.getStringList("homes");
                 if (homeNames == null) homeNames = new ArrayList<>();
 
@@ -312,13 +388,10 @@ public class AdminGUIManager {
                     admin.openInventory(gui);
                 }
             } catch (Exception e) {
-                // Leemos el mensaje desde la sección admin con un fallback idéntico a tu cadena original
                 String recordErrorMsg = plugin.getMainConfig().getString(
                         "messages.admin.player-record-error",
                         "&cError processing player record."
                 );
-
-                // Enviamos el mensaje aplicando la paleta de colores hexadecimales y tradicionales
                 admin.sendMessage(Utils.color(recordErrorMsg));
                 e.printStackTrace();
             }
@@ -384,18 +457,11 @@ public class AdminGUIManager {
     }
 
     public void openSearchChat(Player player) {
-        // Cerramos el menú actual para que el jugador pueda ver el chat claramente
         player.closeInventory();
-
-        // Obtenemos la lista de mensajes configurada desde el config.yml
         List<String> promptLines = plugin.getConfig().getStringList("messages.admin.search-prompt");
-
-        // Recorremos cada línea configurada y la enviamos coloreada
         for (String line : promptLines) {
             player.sendMessage(Utils.color(line));
         }
-
-        // Registramos al jugador en los metadatos de conversación de la sesión
         player.setMetadata("admin_search_mode", new org.bukkit.metadata.FixedMetadataValue(plugin, true));
     }
 

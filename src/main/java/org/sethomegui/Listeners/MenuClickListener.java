@@ -33,47 +33,26 @@ public class MenuClickListener implements Listener {
 
         event.setCancelled(true); // Evitamos que muevan los ítems
 
+        // Solo procesamos clicks dentro del menú: el inventario del jugador reutiliza la misma numeración de slots
+        if (event.getRawSlot() < 0 || event.getRawSlot() >= event.getView().getTopInventory().getSize()) return;
+
         ItemStack clickedItem = event.getCurrentItem();
         if (clickedItem == null || !clickedItem.hasItemMeta()) return;
 
-        int clickedSlot = event.getSlot();
-
-        // 1. Obtener la sección de ítems del archivo gui.yml
+        // 1 y 2. Obtenemos el ID interno de forma dinámica: primero desde el PersistentDataContainer
+        // del ítem y, como respaldo, desde el slot que realmente ocupa en gui.yml.
+        // Así el click sigue funcionando aunque el administrador reubique el ítem.
         YamlDocument guiConfig = plugin.getGuisConfig();
-        Section itemsSection = guiConfig.getSection("gui.main-gui.items");
-        if (itemsSection == null) return;
+        Section mainSection = guiConfig.getSection("gui.main-gui");
+        String clickedItemKey = Utils.resolveMenuAction(plugin, clickedItem, mainSection, event.getSlot());
 
-        // 2. Variable para identificar qué ID interno del YAML se ha pulsado
-        String clickedItemKey = null;
-
-        // Escaneamos las llaves (set-home, my-homes, decoration, etc.)
-        for (Object keyObj : itemsSection.getKeys()) {
-            String key = String.valueOf(keyObj);
-            Section itemData = itemsSection.getSection(key);
-            if (itemData == null) continue;
-
-            // Comprobamos si el slot clickeado coincide con el 'slot' único o la lista 'slots'
-            if (itemData.contains("slots")) {
-                List<Integer> slots = itemData.getIntList("slots");
-                if (slots.contains(clickedSlot)) {
-                    clickedItemKey = key;
-                    break;
-                }
-            } else if (itemData.contains("slot")) {
-                if (itemData.getInt("slot") == clickedSlot) {
-                    clickedItemKey = key;
-                    break;
-                }
-            }
-        }
-
-        // Si no encontramos ninguna coincidencia en la configuración, salimos
+        // Si el ítem no tiene ninguna acción asociada (ej: decoración), salimos
         if (clickedItemKey == null) return;
 
         // 3. Ejecutar las lógicas correspondientes de forma dinámica según la KEY del YAML
         switch (clickedItemKey) {
 
-            case "set-home":
+            case "set_home":
                 plugin.getGuiManager().playConfiguredClickSound(player, "main-gui");
 
                 // --- 1. COMPROBACIÓN DE MUNDO EN LISTA NEGRA ---
@@ -119,7 +98,7 @@ public class MenuClickListener implements Listener {
                 ChatPromptListener.startPrompt(player);
                 break;
 
-            case "my-homes":
+            case "my_homes":
                 plugin.getGuiManager().playConfiguredClickSound(player, "main-gui");
                 player.closeInventory();
 

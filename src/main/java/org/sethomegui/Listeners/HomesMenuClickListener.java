@@ -60,36 +60,29 @@ public class HomesMenuClickListener implements Listener {
 
         event.setCancelled(true); // Bloquear inventario
 
+        // Solo procesamos clicks dentro del menú: el inventario del jugador reutiliza la misma numeración de slots
+        if (event.getRawSlot() < 0 || event.getRawSlot() >= event.getView().getTopInventory().getSize()) return;
+
         ItemStack clickedItem = event.getCurrentItem();
         if (clickedItem == null || !clickedItem.hasItemMeta()) return;
 
         int clickedSlot = event.getSlot();
-        Section itemsSection = homesSection.getSection("items");
-        if (itemsSection == null) return;
 
-        // --- ACCIÓN 1: COMPROBACIÓN DE BOTONES FIJOS/DECORATIVOS POR ACCIÓN ---
-        String action = null;
-        for (Object keyObj : itemsSection.getKeys()) {
-            String key = String.valueOf(keyObj);
-            Section itemData = itemsSection.getSection(key);
-            if (itemData == null) continue;
-
-            if (itemData.contains("slot") && itemData.getInt("slot") == clickedSlot) {
-                action = itemData.getString("action");
-                break;
-            }
-        }
+        // --- ACCIÓN 1: BOTONES FIJOS ---
+        // La acción se resuelve por el ítem (PDC) y no por su posición fija, de modo que
+        // los botones siguen funcionando si se reubican en gui.yml
+        String action = Utils.resolveMenuAction(plugin, clickedItem, homesSection, clickedSlot);
 
         if (action != null) {
-            plugin.getGuiManager().playConfiguredClickSound(player, "homes-gui");
-
-            switch (action.toLowerCase()) {
+            switch (action) {
                 case "back":
+                    plugin.getGuiManager().playConfiguredClickSound(player, "homes-gui");
                     player.closeInventory();
                     plugin.getGuiManager().openMainGUI(player);
                     return;
 
                 case "previous_page":
+                    plugin.getGuiManager().playConfiguredClickSound(player, "homes-gui");
                     // Solo cambia de página si realmente hay una página anterior a la cual ir
                     if (currentPage > 1) {
                         plugin.getGuiManager().setPlayerPage(uuid, currentPage - 1);
@@ -98,12 +91,17 @@ public class HomesMenuClickListener implements Listener {
                     return;
 
                 case "next_page":
+                    plugin.getGuiManager().playConfiguredClickSound(player, "homes-gui");
                     // Solo cambia de página si realmente hay hogares en la página siguiente
                     if (currentPage < maxPages) {
                         plugin.getGuiManager().setPlayerPage(uuid, currentPage + 1);
                         plugin.getGuiManager().openHomesGUI(player);
                     }
                     return;
+
+                default:
+                    // Decoración u otros ítems sin lógica: seguimos evaluando la rejilla de hogares
+                    break;
             }
         }
 

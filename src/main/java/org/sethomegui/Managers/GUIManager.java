@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.sethomegui.SetHomeGUI;
 import org.sethomegui.Utils.Utils;
 
@@ -52,6 +53,15 @@ public class GUIManager {
                 if (itemData == null) continue;
 
                 ItemStack item = createBaseItem(player, itemData);
+
+                // ⚡ La acción viaja dentro del propio ítem: así el click sigue funcionando
+                // aunque el administrador cambie el 'slot' del ítem en gui.yml
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null) {
+                    meta.getPersistentDataContainer().set(plugin.getActionKey(), PersistentDataType.STRING,
+                            itemData.getString("action", key));
+                    item.setItemMeta(meta);
+                }
 
                 // Grid positioning logic (Works perfectly for both formats: vertical and [1,2,3])
                 if (itemData.contains("slots")) {
@@ -204,16 +214,22 @@ public class GUIManager {
                         }
                         meta.setLore(lore);
                     }
+
+                    // ⚡ Acción anclada al ítem para que confirmar/cancelar funcione en cualquier slot
+                    meta.getPersistentDataContainer().set(plugin.getActionKey(), PersistentDataType.STRING,
+                            itemData.getString("action", key));
+
                     item.setItemMeta(meta);
                 }
 
                 // Colocamos el ítem en su slot único o en sus múltiples slots decorativos
                 if (itemData.contains("slots")) {
                     for (int slot : itemData.getIntList("slots")) {
-                        gui.setItem(slot, item);
+                        if (slot >= 0 && slot < size) gui.setItem(slot, item);
                     }
                 } else if (itemData.contains("slot")) {
-                    gui.setItem(itemData.getInt("slot"), item);
+                    int slot = itemData.getInt("slot");
+                    if (slot >= 0 && slot < size) gui.setItem(slot, item);
                 }
             }
         }
@@ -259,16 +275,23 @@ public class GUIManager {
                     }
                     meta.setLore(lore);
                 }
+
+                // ⚡ La acción viaja dentro del propio ítem: así el click sigue funcionando
+                // aunque el administrador cambie el 'slot' del ítem en gui.yml
+                meta.getPersistentDataContainer().set(plugin.getActionKey(), PersistentDataType.STRING,
+                        itemData.getString("action", key));
+
                 item.setItemMeta(meta);
             }
 
             // Colocamos el ítem de forma estricta en su posición o lista de posiciones
             if (itemData.contains("slots")) {
                 for (int slot : itemData.getIntList("slots")) {
-                    gui.setItem(slot, item);
+                    if (slot >= 0 && slot < gui.getSize()) gui.setItem(slot, item);
                 }
             } else if (itemData.contains("slot")) {
-                gui.setItem(itemData.getInt("slot"), item);
+                int slot = itemData.getInt("slot");
+                if (slot >= 0 && slot < gui.getSize()) gui.setItem(slot, item);
             }
         }
     }

@@ -1,6 +1,7 @@
 package org.sethomegui.Commands;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,7 +26,7 @@ public class SetHomeCommand implements CommandExecutor {
         if (!(sender instanceof Player)) {
             String onlyPlayersMsg = plugin.getMainConfig().getString(
                     "messages.only-players",
-                    "&#ef6603[SetHomeGUI] &cError: Only players can execute this command."
+                    "&#ef6603[SetHomeGUI+] &cError: Only players can execute this command."
             );
             sender.sendMessage(Utils.color(onlyPlayersMsg));
             return true;
@@ -41,7 +42,7 @@ public class SetHomeCommand implements CommandExecutor {
 
         if (blacklistedWorlds != null && blacklistedWorlds.contains(currentWorld)) {
             String worldMsg = config.getString(basePath + "world-blacklisted",
-                    "&#ef6603[SetHomeGUI] &cYou cannot set a home in the world &f%world%&#ef6603!");
+                    "&#ef6603[SetHomeGUI+] &cYou cannot set a home in the world &f%world%&#ef6603!");
 
             worldMsg = worldMsg.replace("%world%", currentWorld);
             player.sendMessage(Utils.setPlaceholders(player, worldMsg, plugin));
@@ -56,7 +57,7 @@ public class SetHomeCommand implements CommandExecutor {
         if (args.length == 0) {
             if (maxHomes != -1 && currentHomes >= maxHomes) {
                 String limitMsg = config.getString(basePath + "limit-reached",
-                        "&#ef6603[SetHomeGUI] &cYou have reached your maximum limit of &f%max% &chomes!");
+                        "&#ef6603[SetHomeGUI+] &cYou have reached your maximum limit of &f%max% &chomes!");
                 limitMsg = limitMsg.replace("%max%", String.valueOf(maxHomes));
                 player.sendMessage(Utils.setPlaceholders(player, limitMsg, plugin));
                 return true;
@@ -64,7 +65,7 @@ public class SetHomeCommand implements CommandExecutor {
 
             String cancelWord = config.getString(basePath + "cancel-word", "cancel");
             String promptMsg = config.getString(basePath + "name-prompt",
-                    "&#ef6603[SetHomeGUI] &#f9a805Please type the name for your home in the chat... Or type &f%cancel_word% &#f9a805to exit.");
+                    "&#ef6603[SetHomeGUI+] &#f9a805Please type the name for your home in the chat... Or type &f%cancel_word% &#f9a805to exit.");
             promptMsg = promptMsg.replace("%cancel_word%", cancelWord);
 
             player.sendMessage(Utils.setPlaceholders(player, promptMsg, plugin));
@@ -78,7 +79,13 @@ public class SetHomeCommand implements CommandExecutor {
             builder.append(args[i]);
             if (i < args.length - 1) builder.append(" ");
         }
-        String homeName = builder.toString().trim();
+
+        // 🛠️ LIMPIEZA DE TEXTO CRUDO: Eliminamos códigos '§' y '&' para evitar conflictos con ChatColor
+        String rawHomeName = builder.toString().trim();
+        rawHomeName = ChatColor.stripColor(rawHomeName); // Remueve secciones legadas '§'
+        rawHomeName = ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', rawHomeName)); // Remueve secciones con '&'
+
+        final String homeName = rawHomeName;
 
         // VALIDACIÓN DE LISTA NEGRA
         List<String> blacklist = plugin.getMainConfig().getStringList("blacklisted-words");
@@ -87,10 +94,10 @@ public class SetHomeCommand implements CommandExecutor {
                 if (homeName.toLowerCase().contains(word.toLowerCase())) {
                     String blacklistMsg = plugin.getMainConfig().getString(
                             "messages.home-creation-messages.blacklisted-name",
-                            "&#ef6603[SetHomeGUI] &cError: The home name contains a blacklisted word!"
+                            "&#ef6603[SetHomeGUI+] &cError: The home name contains a blacklisted word!"
                     );
                     player.sendMessage(Utils.color(blacklistMsg));
-                    return true; // Cancelamos la ejecución del comando
+                    return true;
                 }
             }
         }
@@ -99,29 +106,35 @@ public class SetHomeCommand implements CommandExecutor {
         String regex = config.getString("name-regex", "^[A-Za-z0-9\\s]{1,32}$");
         if (!homeName.matches(regex) || homeName.isEmpty()) {
             String errorMsg = config.getString(basePath + "invalid-name",
-                    "&#ef6603[SetHomeGUI] &cInvalid name! &#f9a805Please avoid using spaces, dots, or slashes. Try again or type &f%cancel_word% &#f9a805to exit.");
+                    "&#ef6603[SetHomeGUI+] &cInvalid name! &#f9a805Please avoid using spaces, dots, or slashes. Try again or type &f%cancel_word% &#f9a805to exit.");
             String cancelWord = config.getString(basePath + "cancel-word", "cancel");
             errorMsg = errorMsg.replace("%cancel_word%", cancelWord);
             player.sendMessage(Utils.setPlaceholders(player, errorMsg, plugin));
             return true;
         }
 
-        // VALIDACIÓN DE LÍMITE DE ÚLTIMO SEGUNDO (Ignorado si se está sobreescribiendo uno existente)
+        // VALIDACIÓN DE LÍMITE DE ÚLTIMO SEGUNDO
         boolean homeExists = plugin.getHomeManager().getPlayerFile(player.getUniqueId()).getStringList("homes").contains(homeName);
         if (!homeExists && maxHomes != -1 && currentHomes >= maxHomes) {
             String limitMsg = config.getString(basePath + "limit-reached",
-                    "&#ef6603[SetHomeGUI] &cYou have reached your maximum limit of &f%max% &chomes!");
+                    "&#ef6603[SetHomeGUI+] &cYou have reached your maximum limit of &f%max% &chomes!");
             limitMsg = limitMsg.replace("%max%", String.valueOf(maxHomes));
             player.sendMessage(Utils.setPlaceholders(player, limitMsg, plugin));
             return true;
         }
 
         // GUARDADO FÍSICO SEGURO (Sincronizado con Folia/Paper)
+        final boolean isNewRegistration = !homeExists;
         Bukkit.getRegionScheduler().execute(plugin, player.getLocation(), () -> {
             plugin.getHomeManager().saveHome(player.getUniqueId(), homeName, player.getLocation());
 
+            // 🚀 ACTUALIZACIÓN DE LA CACHÉ EN CALIENTE (PREMIUM)
+            if (isNewRegistration && plugin.getAdminGUIManager() != null) {
+                plugin.getAdminGUIManager().registerPlayerInCache(player);
+            }
+
             String successMsg = config.getString(basePath + "home-saved",
-                    "&#ef6603[SetHomeGUI] &#f9a805Home &f%name% &#f9a805has been successfully saved!");
+                    "&#ef6603[SetHomeGUI+] &#f9a805Home &f%name% &#f9a805has been successfully saved!");
             successMsg = successMsg.replace("%name%", homeName);
             player.sendMessage(Utils.setPlaceholders(player, successMsg, plugin));
         });

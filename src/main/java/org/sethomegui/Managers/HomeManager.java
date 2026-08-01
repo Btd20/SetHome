@@ -1,12 +1,9 @@
 package org.sethomegui.Managers;
 
 import dev.dejvokep.boostedyaml.YamlDocument;
-import dev.dejvokep.boostedyaml.settings.general.GeneralSettings;
 import org.bukkit.Location;
-import org.bukkit.Bukkit;
 import org.sethomegui.SetHomeGUI;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,36 +12,27 @@ import java.util.UUID;
 public class HomeManager {
 
     private final SetHomeGUI plugin;
-    private final File dataFolder;
 
     public HomeManager(SetHomeGUI plugin) {
         this.plugin = plugin;
-        this.dataFolder = new File(plugin.getDataFolder(), "data");
-        if (!dataFolder.exists()) {
-            dataFolder.mkdirs();
-        }
     }
 
     /**
-     * Obtiene el archivo YamlDocument específico de un jugador (.yml)
+     * Obtiene el documento de datos de un jugador desde el backend activo
+     * (archivos YAML por defecto, o MySQL si está configurado en config.yml).
+     *
+     * El documento devuelto se comporta como cualquier YamlDocument: al llamar a save()
+     * los datos se persisten solos en el backend que corresponda.
      */
     public YamlDocument getPlayerFile(UUID uuid) {
-        // Cambiado de ".yaml" a ".yml" para mantener la consistencia del plugin
-        File playerFile = new File(dataFolder, uuid.toString() + ".yml");
-        try {
-            return YamlDocument.create(playerFile, GeneralSettings.DEFAULT);
-        } catch (IOException e) {
-            // Leemos la plantilla desde el config.yml usando tu lector de BoostedYAML
-            String loadErrorMsg = plugin.getMainConfig().getString(
-                    "messages.system-errors.load-error",
-                    "Could not load or create data file for user: %uuid%"
-            );
+        return plugin.getStorageManager().get(uuid);
+    }
 
-            // Reemplazamos el marcador %uuid% por la variable local y lo mandamos de forma segura al logger
-            plugin.getLogger().severe(loadErrorMsg.replace("%uuid%", uuid.toString()));
-            e.printStackTrace();
-            return null;
-        }
+    /**
+     * Elimina por completo los datos de un jugador del backend activo.
+     */
+    public void deletePlayerData(UUID uuid) {
+        plugin.getStorageManager().delete(uuid);
     }
 
     /**

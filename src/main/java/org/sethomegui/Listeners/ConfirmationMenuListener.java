@@ -43,35 +43,22 @@ public class ConfirmationMenuListener implements Listener {
 
         event.setCancelled(true);
 
+        // Solo procesamos clicks dentro del menú: el inventario del jugador reutiliza la misma numeración de slots
+        if (event.getRawSlot() < 0 || event.getRawSlot() >= event.getView().getTopInventory().getSize()) return;
+
         ItemStack clickedItem = event.getCurrentItem();
         if (clickedItem == null || !clickedItem.hasItemMeta()) return;
 
-        int clickedSlot = event.getSlot();
-        Section itemsSection = confirmSection.getSection("items");
-        if (itemsSection == null) return;
-
-        String clickedKey = null;
-
-        for (Object keyObj : itemsSection.getKeys()) {
-            String key = String.valueOf(keyObj);
-            Section itemData = itemsSection.getSection(key);
-            if (itemData == null) continue;
-
-            if (itemData.contains("slots") && itemData.getIntList("slots").contains(clickedSlot)) {
-                clickedKey = key;
-                break;
-            } else if (itemData.contains("slot") && itemData.getInt("slot") == clickedSlot) {
-                clickedKey = key;
-                break;
-            }
-        }
-
+        // ⚡ La acción se resuelve por el ítem (PDC) y no por su posición fija
+        String clickedKey = Utils.resolveMenuAction(plugin, clickedItem, confirmSection, event.getSlot());
         if (clickedKey == null) return;
+
+        if (!clickedKey.equals("confirm_button") && !clickedKey.equals("cancel_button")) return;
 
         plugin.getGuiManager().playConfiguredClickSound(player, "confirmation-gui");
 
         // ACCIÓN A: EL JUGADOR CONFIRMA LA ELIMINACIÓN
-        if (clickedKey.equalsIgnoreCase("confirm-button")) {
+        if (clickedKey.equals("confirm_button")) {
             player.closeInventory(); // 1. Se cierra el menú por completo
             plugin.getGuiManager().clearPendingDeletion(uuid);
 
@@ -86,27 +73,30 @@ public class ConfirmationMenuListener implements Listener {
 
                 try {
                     playerFile.save();
+
+                    // 🚀 ACTUALIZACIÓN DE LA CACHÉ EN CALIENTE
+                    // Si el jugador se ha quedado sin hogares, lo removemos del panel de administración instantáneamente
+                    if (plugin.getAdminGUIManager() != null) {
+                        plugin.getAdminGUIManager().removePlayerFromCacheIfEmpty(player);
+                    }
+
                     String deleteMsg = plugin.getMainConfig().getString("messages.home-action-messages.home-deleted",
                             "&#ef6603[SetHomeGUI] &#f9a805Home &f%name% &#f9a805has been successfully deleted.");
                     player.sendMessage(Utils.setPlaceholders(player, deleteMsg.replace("%name%", homeName), plugin));
                 } catch (IOException e) {
-                    // Leemos el mensaje desde el config.yml con un fallback idéntico a tu cadena original
                     String deletionErrorMsg = plugin.getMainConfig().getString(
                             "messages.home-action-messages.file-deletion-error",
                             "&#ef6603[SetHomeGUI] &cAn error occurred while deleting the file."
                     );
 
-                    // Enviamos el mensaje procesando los colores hexadecimales y tradicionales
                     player.sendMessage(Utils.color(deletionErrorMsg));
                     e.printStackTrace();
                 }
             }
-
-            // ❌ Eliminada la recarga de openHomesGUI(player) para que no vuelva a abrirse nada.
         }
 
-        // ACCIÓN B: EL JUGADOR CANCELA EL PROCESO (Esta regla la dejamos igual para que sí le devuelva atrás)
-        else if (clickedKey.equalsIgnoreCase("cancel-button")) {
+        // ACCIÓN B: EL JUGADOR CANCELA EL PROCESO
+        else {
             player.closeInventory();
             plugin.getGuiManager().clearPendingDeletion(uuid);
 

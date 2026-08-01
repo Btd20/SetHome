@@ -1,6 +1,7 @@
 package org.sethomegui.Listeners;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -9,34 +10,69 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.sethomegui.SetHomeGUI;
 import org.sethomegui.Utils.Utils;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 public class ChatPromptListener implements Listener {
 
-    private final SetHomeGUI plugin;
-    private static final Set<UUID> awaitingHomeName = new HashSet<>();
+    private static SetHomeGUI plugin;
+    // Usamos ConcurrentHashMap para total seguridad de hilos en Folia/Paper
+    private static final Map<UUID, Long> awaitingHomeName = new ConcurrentHashMap<>();
+
+    // Patrón optimizado para limpiar formatos Hexadecimales comunes (&#ffffff o #ffffff)
+    private static final Pattern HEX_CLEAN_PATTERN = Pattern.compile("&#[A-Fa-f0-9]{6}|#[A-Fa-f0-9]{6}");
 
     public ChatPromptListener(SetHomeGUI plugin) {
-        this.plugin = plugin;
+        ChatPromptListener.plugin = plugin;
     }
 
     public static void startPrompt(Player player) {
-        awaitingHomeName.add(player.getUniqueId());
+        UUID uuid = player.getUniqueId();
+        long startTime = System.currentTimeMillis();
+        awaitingHomeName.put(uuid, startTime);
+
+        // Obtener el tiempo de expiración desde la configuración (por defecto 60 segundos)
+        long timeoutSeconds = plugin.getMainConfig().getLong("chat-prompt-timeout", 60L);
+
+        // PROGRAMAR EL TIMEOUT AUTOMÁTICO EN EL ASYNC SCHEDULER (Compatible con Folia)
+        Bukkit.getAsyncScheduler().runDelayed(plugin, (task) -> {
+            // Verificamos si el jugador sigue esperando y si es el prompt correcto (mismo timestamp)
+            if (awaitingHomeName.containsKey(uuid) && awaitingHomeName.get(uuid) == startTime) {
+                awaitingHomeName.remove(uuid);
+
+                // Evitamos errores si el jugador se desconectó durante la espera
+                if (!player.isOnline()) return;
+
+                String timeoutMsg = plugin.getMainConfig().getString(
+                        "messages.home-creation-messages.creation-timeout",
+                        "&#ef6603[SetHomeGUI] &cTime expired! Home creation process cancelled."
+                );
+                player.sendMessage(Utils.setPlaceholders(player, timeoutMsg, plugin));
+            }
+        }, timeoutSeconds, TimeUnit.SECONDS);
     }
 
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
-        if (!awaitingHomeName.contains(uuid)) return;
+        // Si no está en el mapa, ignoramos el evento por completo
+        if (!awaitingHomeName.containsKey(uuid)) return;
 
         event.setCancelled(true);
 
-        String message = event.getMessage().trim();
+        // 🛠️ LIMPIEZA DE TEXTO CRUDO EXTREMA (Anti ChatColor2, códigos legados § y &)
+        String rawMessage = event.getMessage().trim();
+        rawMessage = HEX_CLEAN_PATTERN.matcher(rawMessage).replaceAll(""); // Remueve formatos Hex
+        rawMessage = ChatColor.stripColor(rawMessage); // Remueve secciones legadas '§'
+        rawMessage = ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', rawMessage)); // Remueve secciones con '&'
+
+        String message = rawMessage;
         String basePath = "messages.home-creation-messages.";
         String cancelWord = plugin.getMainConfig().getString(basePath + "cancel-word", "cancel");
 
@@ -100,9 +136,11 @@ public class ChatPromptListener implements Listener {
         awaitingHomeName.remove(uuid);
         String homeName = message;
 
+        // Se mantiene la ejecución correcta en la región de Folia del jugador
         Bukkit.getRegionScheduler().execute(plugin, player.getLocation(), () -> {
             plugin.getHomeManager().saveHome(uuid, homeName, player.getLocation());
 
+            // Lógica de caché premium removida aquí para la versión normal
             String successMsg = plugin.getMainConfig().getString(basePath + "home-saved");
             successMsg = successMsg.replace("%name%", "&f" + homeName);
             player.sendMessage(Utils.setPlaceholders(player, successMsg, plugin));

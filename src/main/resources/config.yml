@@ -7,10 +7,75 @@
 # |  $$$$$$/|  $$$$$$$  |  $$$$/| $$  | $$|  $$$$$$/| $$ | $$ | $$|  $$$$$$$|  $$$$$$/|  $$$$$$/ /$$$$$$
 # \______/  \_______/   \___/  |__/  |__/ \______/ |__/ |__/ |__/ \_______/ \______/  \______/ |______/
 #                   Author: Beeted_
-#                   Version: 3.0
+#                   Version: ${project.version}
 
 # For support: https://discord.gg/3k4MbQ3KNv
 # If you liked the plugin, I would greatly appreciate a review on the page :)
+
+# ==========================================================================
+#                        DATA STORAGE / DATABASES
+# ==========================================================================
+# Where all player data (homes) is stored.
+#
+#   YAML  -> One file per player in /data. Default. No setup required.
+#   MYSQL -> MySQL or MariaDB server with normalized tables. Recommended for
+#            networks (BungeeCord/Velocity) where several servers share homes.
+#
+# If MySQL is enabled but cannot be reached, the plugin logs the error and
+# keeps running on local YAML files instead of breaking.
+#
+# NOTE: changes in this section require a FULL SERVER RESTART.
+# /homeadmin reload does not reopen database connections.
+storage:
+  type: YAML
+
+  # Copies every existing /data/*.yml into the external backend on startup.
+  # Turn it on once after switching to MYSQL, then set it back to false.
+  migrate-from-yaml: false
+
+  mysql:
+    host: localhost
+    port: 3306
+    database: sethomegui
+    username: root
+    password: ""
+
+    # Prefix for the plugin tables (<prefix>players, <prefix>homes,
+    # <prefix>home_access, <prefix>friends). Only letters, numbers and _.
+    table-prefix: "sethomegui_"
+
+    # Maximum simultaneous connections and connection timeout in milliseconds.
+    pool-size: 10
+    connection-timeout: 10000
+
+    # Extra parameters appended to the JDBC URL.
+    properties:
+      useSSL: false
+      characterEncoding: utf8
+      autoReconnect: true
+
+  # Optional layer ON TOP of MySQL (it is ignored when type is YAML).
+  # Redis does not replace the database: it caches reads and instantly tells
+  # the other servers of the network when a player's data changes, so nobody
+  # keeps serving outdated homes from memory.
+  redis:
+    enabled: false
+    host: localhost
+    port: 6379
+    password: ""
+    database: 0
+    ssl: false
+    timeout: 2000
+    pool-size: 8
+
+    # How long a cached copy survives in Redis, in seconds.
+    cache-seconds: 300
+
+    # Unique name for THIS server. Two servers must never share the same id,
+    # otherwise they will ignore each other's synchronization messages.
+    server-id: "server-1"
+
+    key-prefix: "sethomegui:player:"
 
 # Default permission config
 requires-default-permission: false
@@ -23,6 +88,9 @@ name-regex: "^[A-Za-z0-9\\s]{1,32}$"
 # Default max homes config.
 # Set to -1 for unlimited homes.
 default-max-homes: 3
+
+# Time in seconds that a player has to type the home name in chat before the process automatically expires.
+chat-prompt-timeout: 60
 
 # Teleporting config.
 teleport-cooldown: 5
@@ -52,6 +120,7 @@ messages:
     limit-reached: "&#ef6603[SetHomeGUI] &cYou have reached your maximum limit of &f%max% &chomes!"
     world-blacklisted: "&#ef6603[SetHomeGUI] &cYou cannot set a home in the world &f%world%&#ef6603!"
     blacklisted-name: "&#ef6603[SetHomeGUI] &cError: The home name contains a blacklisted word!"
+    creation-timeout: "&#ef6603[SetHomeGUI] &cTime expired! The home creation process has timed out."
   home-action-messages:
     home-deleted: "&#ef6603[SetHomeGUI] &#f9a805Home &f%name% &#f9a805has been successfully deleted."
     home-not-found: "&#ef6603[SetHomeGUI] &cError: You do not have a home named &f%name%&c."
@@ -68,6 +137,9 @@ messages:
     no-permission: "&#ef6603[SetHomeGUI] &cYou do not have permission to execute this command."
     delete-success: "&#ef6603[SetHomeGUI] &#f9a805Safely deleted home &f%home% &#f9a805from the player's records."
     database-error: "&#ef6603[SetHomeGUI] &cError modifying the database file."
+    command-usage: "&#ef6603[SetHomeGUI] &cUsage: /homeadmin <gui|view|import|reload|version>"
+    view-usage: "&#ef6603[SetHomeGUI] &cUsage: /homeadmin view <player>"
+    view-unknown-player: "&#ef6603[SetHomeGUI] &cError: Player &f%player% &chas never played on this server."
     search-prompt:
       - ""
       - "&#ef6603🔍 &lPLAYER SEARCH MODE"

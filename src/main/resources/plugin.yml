@@ -1,5 +1,5 @@
 name: SetHomeGUI
-version: '3.0.1'
+version: '${project.version}'
 main: org.sethomegui.SetHomeGUI
 api-version: '1.21'
 load: STARTUP

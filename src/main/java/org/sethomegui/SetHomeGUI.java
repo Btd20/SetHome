@@ -12,6 +12,8 @@ import org.sethomegui.Commands.MainCommands;
 import org.sethomegui.Managers.HomeManager;
 import org.sethomegui.Managers.TeleportManager;
 import org.sethomegui.Placeholders.GlobalPlaceholders;
+import org.sethomegui.Storage.StorageManager;
+import org.bukkit.NamespacedKey;
 
 import dev.dejvokep.boostedyaml.YamlDocument;
 import dev.dejvokep.boostedyaml.settings.general.GeneralSettings;
@@ -30,6 +32,9 @@ public final class SetHomeGUI extends JavaPlugin {
     private HomeManager homeManager;
     private TeleportManager teleportManager;
     private AdminGUIManager adminGUIManager;
+    private StorageManager storageManager;
+    private NamespacedKey actionKey;
+    private NamespacedKey targetHomeKey;
 
     @Override
     public void onEnable() {
@@ -38,10 +43,20 @@ public final class SetHomeGUI extends JavaPlugin {
         int pluginId = 23348;
         new Metrics(this, pluginId);
 
+        // Las llaves deben existir antes de que cualquier menú construya ítems
+        this.actionKey = new NamespacedKey(this, "sethomegui_action");
+        this.targetHomeKey = new NamespacedKey(this, "sethomegui_target_home");
+
+        // El almacenamiento debe estar listo antes que cualquier manager que lea datos
+        this.storageManager = new StorageManager(this);
+        this.storageManager.initialize();
+
         this.guiManager = new GUIManager(this);
         this.homeManager = new HomeManager(this);
         this.teleportManager = new TeleportManager(this);
         this.adminGUIManager = new AdminGUIManager(this);
+
+        this.adminGUIManager.loadPlayersCacheAsync();
 
         getServer().getPluginManager().registerEvents(new MenuClickListener(this), this);
         getServer().getPluginManager().registerEvents(new ChatPromptListener(this), this);
@@ -49,6 +64,7 @@ public final class SetHomeGUI extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ConfirmationMenuListener(this), this);
         getServer().getPluginManager().registerEvents(new AdminMenuClickListener(this), this);
         getServer().getPluginManager().registerEvents(new AdminChatListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerDataListener(this), this);
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             getLogger().info("PlaceholderAPI found! Registering placeholders...");
@@ -160,6 +176,12 @@ public final class SetHomeGUI extends JavaPlugin {
 
     public AdminGUIManager getAdminGUIManager() { return this.adminGUIManager; }
 
+    public StorageManager getStorageManager() { return this.storageManager; }
+
+    public NamespacedKey getActionKey() { return this.actionKey; }
+
+    public NamespacedKey getTargetHomeKey() { return this.targetHomeKey; }
+
     public YamlDocument getGuiAdminConfig() { return this.guiAdminConfig; }
 
     @Override
@@ -167,6 +189,10 @@ public final class SetHomeGUI extends JavaPlugin {
         // Los archivos de configuración de lectura (como menús y config general) NO se deben guardar
         // al apagar el servidor a menos que el plugin modifique valores mediante código (setters).
         // Al quitar el .save() de aquí, evitamos que un guardado corrupto destruya las ediciones hechas a mano.
+
+        // Vacia la cola de escrituras pendientes y cierra las conexiones de MySQL/Redis
+        if (storageManager != null) storageManager.shutdown();
+
         getLogger().info("SetHomeGUI has been safely disabled.");
     }
 }

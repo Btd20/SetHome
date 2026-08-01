@@ -24,7 +24,8 @@ public class GlobalPlaceholders extends PlaceholderExpansion {
 
     @Override
     @NotNull
-    public String getVersion() { return "3.0.1"; }
+    // Se lee de plugin.yml para que no vuelva a quedarse desfasada al subir de version
+    public String getVersion() { return plugin.getDescription().getVersion(); }
 
     @Override
     public boolean persist() { return true; }
